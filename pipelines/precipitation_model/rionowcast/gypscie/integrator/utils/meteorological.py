@@ -6,8 +6,8 @@ ADD
 
 import numpy as np
 import pandas as pd
-from metpy.units import units
 from metpy.calc import wind_components
+from metpy.units import units
 
 
 def cyclic_time_encoding(s: pd.Series):

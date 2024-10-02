@@ -4,19 +4,20 @@
 rodar local:
 python integrator.py --sources InmetWS AlertaRioRG --period "2024-02-02" "2024-02-03"
 """
-import argparse, os
+import argparse
+import os
+from datetime import datetime
+
+import mlflow
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-# from dotenv import load_dotenv
-from utils.logging import Logger
-import mlflow
-
 # from utils.datalake import DataLakeWrapper
 from utils.date_time import is_valid_date, today
-from datetime import datetime
 
+# from dotenv import load_dotenv
+from utils.logging import Logger
 
 INSTRUMENTS = ["AlertaRioRG", "AlertaRioWS", "InmetWS", "IneaRadar"]
 FEATURE_HANDLERS = ["NoneHandler", "ZeroHandler", "ZeroWithFlagHandler"]

@@ -5,36 +5,34 @@ General utilities for all pipelines.
 """
 
 import base64
-from datetime import datetime
 import json
 import logging
+import re
+import textwrap
+from datetime import datetime
 from os import getenv, walk
 from os.path import join
 from pathlib import Path
-import re
-import textwrap
 from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 import basedosdados as bd
 import croniter
-from google.cloud import storage
-from google.cloud.storage.blob import Blob
-from google.oauth2 import service_account
 import hvac
 import numpy as np
 import pandas as pd
 import pendulum
 import prefect
+import requests
+import telegram
+from google.cloud import storage
+from google.cloud.storage.blob import Blob
+from google.oauth2 import service_account
 from prefect.client import Client
 from prefect.engine.state import Skipped, State
 from prefect.run_configs import KubernetesRun
-from prefect.utilities.graphql import (
-    with_args,
-)
+from prefect.utilities.graphql import with_args
 from redis_pal import RedisPal
-import requests
-import telegram
 
 from pipelines.constants import constants
 
@@ -402,7 +400,7 @@ def smart_split(
     return [
         text[:separator_index],  # noqa E203
         *smart_split(
-            text[separator_index + len(separator):],  # noqa E203
+            text[separator_index + len(separator) :],  # noqa E203
             max_length,
             separator,
         ),

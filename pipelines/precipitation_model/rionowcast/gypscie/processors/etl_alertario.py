@@ -26,16 +26,16 @@ import warnings
 import mlflow
 import numpy as np
 import pandas as pd
+from utils.filesystem import make_path  # , destroy_path
 
 # from dotenv import load_dotenv
 # from utils.logging import Logger
 # from src.utils.datalake import DataLakeWrapper
 from utils.meteorological import (
-    cyclic_time_encoding,
     cyclic_month_encoding,
+    cyclic_time_encoding,
     cyclic_wind_encoding,
 )
-from utils.filesystem import make_path  # , destroy_path
 
 warnings.filterwarnings("ignore")
 
@@ -455,9 +455,7 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
             # self._logger.info('Encoding cyclic wind')
 
             print("Encoding cyclic wind")
-            dfr["wind_u"], dfr["wind_v"] = cyclic_wind_encoding(
-                dfr["wind_speed"], dfr["wind_dir"]
-            )
+            dfr["wind_u"], dfr["wind_v"] = cyclic_wind_encoding(dfr["wind_speed"], dfr["wind_dir"])
             # self._logger.info('Encoding cyclic time')
 
             print("Encoding cyclic time")

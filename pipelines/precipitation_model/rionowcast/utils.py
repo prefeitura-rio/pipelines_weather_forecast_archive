@@ -7,10 +7,9 @@ Utils file
 from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
-import requests
 
 import basedosdados as bd
-
+import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
 

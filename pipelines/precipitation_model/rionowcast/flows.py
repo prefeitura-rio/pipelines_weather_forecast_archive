@@ -4,16 +4,14 @@
 Download meteorological data, treat then, integrate and predict
 """
 
-from prefect import case, Parameter
+from prefect import Parameter, case
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.state_handlers import (
-    handler_inject_bd_credentials,
-)
 from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.state_handlers import handler_inject_bd_credentials
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
     create_table_and_upload_to_gcs,
     get_now_datetime,
@@ -21,13 +19,9 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401; update_schedule,
     prediction_schedule,
-    # update_schedule,
 )
-
-# from pathlib import Path
-
 from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     access_api,
     calculate_start_and_end_date,
@@ -35,20 +29,21 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     desnormalize_data,
     execute_dataset_processor,
     execute_prediction_on_gypscie,
-    get_billing_project_id,
-    get_dataset_info,
     geolocalize_data,
-    get_dataset_processor_info,
+    get_billing_project_id,
     get_dataflow_params,
+    get_dataset_info,
+    get_dataset_processor_info,
     get_output_dataset_ids_on_gypscie,
     get_prediction_on_gypscie,
     query_data_from_gcp,
     register_dataset_on_gypscie,
     task_wait_run,
 )
-from pipelines.tasks import (  # pylint: disable=E0611, E0401
-    task_create_partitions,
-)
+from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
+
+# from pathlib import Path
+
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
@@ -83,7 +78,7 @@ with Flow(
     source = Parameter("source", default="alertario", required=False)
 
     # Dataset path, if it was saved on ETL flow or it will be None
-    dataset_path = Parameter("dataset_path", default=None, required=False) # dataset_path
+    dataset_path = Parameter("dataset_path", default=None, required=False)  # dataset_path
 
     #########################
     #  Start flow           #
@@ -112,17 +107,15 @@ with Flow(
     # Get processor information on gypscie
     with case(dataset_processor_id, None):
         dataset_processor_response, dataset_processor_id = get_dataset_processor_info(
-        api, processor_name
-    )
-
-    dataset_response = register_dataset_on_gypscie(
-                api, filepath=dataset_path, domain_id=domain_id
+            api, processor_name
         )
 
+    dataset_response = register_dataset_on_gypscie(api, filepath=dataset_path, domain_id=domain_id)
+
     processor_parameters = {
-            "dataset1": str(dataset_path).rsplit("/", maxsplit=1)[-1],
-            "station_type": station_type,
-        }
+        "dataset1": str(dataset_path).rsplit("/", maxsplit=1)[-1],
+        "station_type": station_type,
+    }
 
     dataset_processor_task_id = execute_dataset_processor(
         api,

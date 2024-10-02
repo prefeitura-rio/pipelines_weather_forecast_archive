@@ -4,24 +4,25 @@ Tasks
 """
 import datetime
 import os
-from time import sleep
 from pathlib import Path
+from time import sleep
 from typing import Dict, List  # Tuple
-from requests.exceptions import HTTPError
+
+import numpy as np
+import pandas as pd
+import pendulum
 
 # import basedosdados as bd
 # from basedosdados.download.base import google_client
 from basedosdados.upload.base import Base
 from google.cloud import bigquery
-import numpy as np
-import pandas as pd
-import pendulum
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
-
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
+from requests.exceptions import HTTPError
+
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.utils import (  # pylint: disable=E0611, E0401
     GypscieApi,
@@ -127,7 +128,9 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
 
     data = {
         "domain_id": domain_id,
-        "name": str(filepath).split("/")[-1].split(".csv")[0],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
+        "name": str(filepath)
+        .split("/")[-1]
+        .split(".csv")[0],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
     }
     log(type(data), data)
     files = {
@@ -254,7 +257,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-    savepath = directory_path / f"{dataset_id}_{table_id}" ### TODO: 
+    savepath = directory_path / f"{dataset_id}_{table_id}"  ### TODO:
 
     # pylint: disable=consider-using-f-string
     query = """
@@ -320,6 +323,7 @@ def execute_prediction_on_gypscie(
     # TODO: retorna a predição? o id da do dataset?
 
     return response.json().get("task_id")  # response.json().get('task_id')
+
 
 @task
 def task_wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
@@ -546,10 +550,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
             dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
     else:
         dataset_info = {
-        "dataset_id": "clima_radar",
+            "dataset_id": "clima_radar",
         }
         if source == "mendanha":
             dataset_info["storage_path"] = ""
-            dataset_info["destination_table_id"] = "preprocessamento_radar_mendanha"    
+            dataset_info["destination_table_id"] = "preprocessamento_radar_mendanha"
     return dataset_info
-    
