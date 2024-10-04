@@ -10,8 +10,11 @@ from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.state_handlers import (
+    handler_initialize_sentry,
+    handler_inject_bd_credentials,
+)
 from prefeitura_rio.pipelines_utils.logging import log
-from prefeitura_rio.pipelines_utils.state_handlers import handler_inject_bd_credentials
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
     create_table_and_upload_to_gcs,
     get_now_datetime,
@@ -47,6 +50,12 @@ from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E04
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
+    state_handlers=[
+        handler_initialize_sentry,
+        handler_inject_bd_credentials,
+    ],
+    parallelism=10,
+    skip_if_running=False,
 ) as preprocessing_previsao_chuva_rionowcast:
 
     # Parameters to run a query on Bigquery
@@ -71,7 +80,8 @@ with Flow(
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
-    dataset_id = Parameter("dataset_id", default="clima_rionowcast", required=False)
+    dataset_id = Parameter("dataset_id", default="clima_previsao_chuva", required=False)
+    table_id = Parameter("table_id", default="modelo_pluviometro_alertario_radar_mendanha_rionowcast", required=False)
 
     # Dataset parameters
     station_type = Parameter("station_type", default="pluviometro", required=False)
@@ -178,6 +188,12 @@ preprocessing_previsao_chuva_rionowcast.run_config = KubernetesRun(
 
 with Flow(
     name="WEATHER FORECAST: Previsão de Chuva - Rionowcast",
+    state_handlers=[
+        handler_initialize_sentry,
+        handler_inject_bd_credentials,
+    ],
+    parallelism=10,
+    skip_if_running=False,
 ) as prediction_previsao_chuva_rionowcast:
 
     #########################
