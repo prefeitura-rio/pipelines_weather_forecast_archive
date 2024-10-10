@@ -10,22 +10,16 @@ from typing import Dict, List  # Tuple
 
 import numpy as np
 import pandas as pd
-
 from basedosdados.upload.base import Base
 from google.cloud import bigquery
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from requests.exceptions import HTTPError
-
-from utils import (  # pylint: disable=E0611, E0401
-    GypscieApi,
-    wait_run,
-)
-
+from utils import GypscieApi, wait_run  # pylint: disable=E0611, E0401
 
 # noqa E302, E303
-# 
+#
 # def access_api():
 #     """# noqa E303
 #     Acess api and return it to be used in other requests
@@ -41,7 +35,6 @@ from utils import (  # pylint: disable=E0611, E0401
 #     api = GypscieApi(username=username, password=password)
 
 #     return api
-
 
 
 def get_billing_project_id(
@@ -99,7 +92,6 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
     return dfr
 
 
-
 def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict:
     """
     Register dataset on gypscie and return its informations like id.
@@ -123,9 +115,9 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
 
     data = {
         "domain_id": domain_id,
-        "name": str(filepath)
-        .split("/")[-1]
-        .split(".")[0]+'_'+datetime.datetime.now().strftime("%Y%m%d%H%M%S"),  # pylint: disable=use-maxsplit-arg
+        "name": str(filepath).split("/")[-1].split(".")[0]
+        + "_"
+        + datetime.datetime.now().strftime("%Y%m%d%H%M%S"),  # pylint: disable=use-maxsplit-arg
     }
     print(type(data), data)
     files = {
@@ -134,7 +126,9 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
 
     response = api.post(path="datasets", data=data, files=files)
 
-    print(f"register_dataset_on_gypscie response: {response} and response.json(): {response.json()}")
+    print(
+        f"register_dataset_on_gypscie response: {response} and response.json(): {response.json()}"
+    )
     return response.json()
 
 
@@ -158,7 +152,6 @@ def get_dataset_processor_info(api, processor_name: str):
 
     # if not dataset_processor_id:
     #     print(f"{processor_name} not found. Try adding it.")
-
 
 
 # pylint: disable=too-many-arguments
@@ -202,7 +195,6 @@ def execute_dataset_processor(
     return task_response.json(["task_id"])
 
 
-
 def predict(api, model_id: int, dataset_id: int, project_id: int) -> dict:
     """
     Requisição de execução de um processo de Predição
@@ -229,7 +221,6 @@ def calculate_start_and_end_date(
     end_date = datetime.datetime.now()
     start_date = end_date - datetime.timedelta(hours=hours_from_past)
     return start_date, end_date
-
 
 
 def query_data_from_gcp(  # pylint: disable=too-many-arguments
@@ -285,7 +276,6 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     return savepath
 
 
-
 def execute_prediction_on_gypscie(
     api,
     model_params: dict,
@@ -321,14 +311,12 @@ def execute_prediction_on_gypscie(
     return response.json().get("task_id")  # response.json().get('task_id')
 
 
-
 def task_wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
     """
     Force flow wait for the end of data processing
     flow_type: dataflow or processor
     """
     return wait_run(api, task_response, flow_type)
-
 
 
 def get_dataflow_params(  # pylint: disable=too-many-arguments
@@ -386,7 +374,6 @@ def get_dataflow_params(  # pylint: disable=too-many-arguments
     }
 
 
-
 def get_output_dataset_ids_on_gypscie(
     api,
     task_id,
@@ -405,7 +392,6 @@ def get_output_dataset_ids_on_gypscie(
     return response.get("output_datasets")
 
 
-
 def download_datasets_from_gypscie(
     api,
     dataset_names: List,
@@ -420,8 +406,7 @@ def download_datasets_from_gypscie(
             print(f"Dataset {file_name} downloaded")
         else:
             print(f"Dataset {file_name} not found on Gypscie")
-    return [dataset_name+".zip" for dataset_name in dataset_names]
-
+    return [dataset_name + ".zip" for dataset_name in dataset_names]
 
 
 def desnormalize_data(array: np.ndarray):
@@ -434,7 +419,6 @@ def desnormalize_data(array: np.ndarray):
         a numpy array with the values desnormalized
     """
     return array
-
 
 
 def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.DataFrame:
@@ -450,7 +434,6 @@ def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.D
     valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
     """
     return prediction_datasets
-
 
 
 def create_image(data) -> List:
@@ -525,7 +508,6 @@ def create_image(data) -> List:
     return save_image_path
 
 
-
 def get_dataset_info(station_type: str, source: str) -> Dict:
     """
     Inputs:
@@ -550,7 +532,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "meteorologia_alertario"
-            dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_alertario"
+            dataset_info[
+                "destination_table_id"
+            ] = "preprocessamento_estacao_meteorologica_alertario"
         elif source == "inmet":
             dataset_info["table_id"] = "meteorologia_inmet"
             dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
