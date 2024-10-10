@@ -6,14 +6,11 @@ import datetime
 import os
 from pathlib import Path
 from time import sleep
-from typing import Dict, List  # Tuple
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-import pendulum
 
-# import basedosdados as bd
-# from basedosdados.download.base import google_client
 from basedosdados.upload.base import Base
 from google.cloud import bigquery
 from prefect import task
@@ -108,7 +105,8 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
 @task()
 def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict:
     """
-    Register dataset on gypscie and return its informations like id
+    Register dataset on gypscie and return its informations like id.
+    Obs: dataset name must be unique.
     Return:
     {
         'domain':
@@ -128,9 +126,9 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
 
     data = {
         "domain_id": domain_id,
-        "name": str(filepath)
-        .split("/")[-1]
-        .split(".csv")[0],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
+        "name": str(filepath).split("/")[-1].split(".")[0]
+        + "_"
+        + datetime.datetime.now().strftime("%Y%m%d%H%M%S"),  # pylint: disable=use-maxsplit-arg
     }
     log(type(data), data)
     files = {
@@ -139,8 +137,7 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
 
     response = api.post(path="datasets", data=data, files=files)
 
-    log(response)
-    log(response.json())
+    log(f"register_dataset_on_gypscie response: {response} and response.json(): {response.json()}")
     return response.json()
 
 
@@ -185,7 +182,7 @@ def execute_dataset_processor(
 
     task_response = api.post(
         path="processor_run",
-        json_data={
+        json={
             "dataset_id": dataset_id,
             "environment_id": environment_id,
             "parameters": parameters,
@@ -257,9 +254,10 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-    savepath = directory_path / f"{dataset_id}_{table_id}"  ### TODO:
+    savepath = directory_path / f"{dataset_id}_{table_id}"  # TODO:
 
     # pylint: disable=consider-using-f-string
+    # noqa E262
     query = """
         SELECT
             *
@@ -327,6 +325,10 @@ def execute_prediction_on_gypscie(
 
 @task
 def task_wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
+    """
+    Force flow wait for the end of data processing
+    flow_type: dataflow or processor
+    """
     return wait_run(api, task_response, flow_type)
 
 
@@ -406,24 +408,26 @@ def get_output_dataset_ids_on_gypscie(
 
 
 @task()
-def get_output_dataset_on_gypscie(
+def download_datasets_from_gypscie(
     api,
-    prediction_dataset_ids,
-):
+    dataset_names: List,
+    wait=None,
+) -> List:
     """
     Get output files with predictions
     """
-    datasets = []
-    for i in prediction_dataset_ids:
-        response = api.get(path="status_workflow_run/" + i)  # TODO change path
-
-        datasets.append(response.json()["result"].get("output_datasets"))  # TODO change get
-
-    return datasets
+    for file_name in dataset_names:
+        response = api.get(path=f"download/datasets/{file_name}.zip")
+        if response.status_code == 200:
+            log(f"Dataset {file_name} downloaded")
+        else:
+            log(f"Dataset {file_name} not found on Gypscie")
+    # TODO: verificar se o arquivo é .zip mesmo
+    return [dataset_name + ".zip" for dataset_name in dataset_names]
 
 
 @task
-def desnormalize_data(array: np.numpy):
+def desnormalize_data(array: np.ndarray):
     """
     Desnormalize data
 
@@ -436,7 +440,7 @@ def desnormalize_data(array: np.numpy):
 
 
 @task
-def geolocalize_data(prediction_datasets: np.numpy, now_datetime: str) -> pd.DataFrame:
+def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.DataFrame:
     """
     Geolocalize data using grid and add timestamp
 
@@ -452,7 +456,7 @@ def geolocalize_data(prediction_datasets: np.numpy, now_datetime: str) -> pd.Dat
 
 
 @task
-def create_image(data):
+def create_image(data) -> List:
     """
     Create image using Geolocalized data or the numpy array from desnormalized_data function
     Exemplo de código que usei pra gerar uma imagem vindo de um xarray:
@@ -536,6 +540,7 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         dataset_info = {
             "dataset_id": "clima_pluviometro",
             "filename": "gauge_station_bq",
+            "partition_date_column": "datetime",
         }
         if source == "alertario":
             dataset_info["table_id"] = "taxa_precipitacao_alertario"
@@ -544,15 +549,57 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         dataset_info = {
             "dataset_id": "clima_pluviometro",
             "filename": "weather_station_bq",
+            "partition_date_column": "datetime",
         }
         if source == "alertario":
+            dataset_info["table_id"] = "meteorologia_alertario"
+            dataset_info[
+                "destination_table_id"
+            ] = "preprocessamento_estacao_meteorologica_alertario"
+        elif source == "inmet":
             dataset_info["table_id"] = "meteorologia_inmet"
             dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
     else:
         dataset_info = {
             "dataset_id": "clima_radar",
+            "partition_date_column": "datetime",
         }
         if source == "mendanha":
             dataset_info["storage_path"] = ""
             dataset_info["destination_table_id"] = "preprocessamento_radar_mendanha"
+        elif source == "guaratiba":
+            dataset_info["storage_path"] = ""
+            dataset_info["destination_table_id"] = "preprocessamento_radar_guaratiba"
+        elif source == "macae":
+            dataset_info["storage_path"] = ""
+            dataset_info["destination_table_id"] = "preprocessamento_radar_macae"
+
     return dataset_info
+
+
+def path_to_dfr(path: str) -> pd.DataFrame:
+
+    """
+    Reads a csv or parquet file from the given path and returns a dataframe
+    """
+    if path.endswith(".csv"):
+        dfr = pd.read_csv(path)
+    elif path.endswith(".parquet"):
+        dfr = pd.read_parquet(path)
+    else:
+        raise ValueError("File extension not supported")
+    return dfr
+
+
+def add_columns_on_dfr(
+    dfr: pd.DataFrame, model_version: int, update_time: bool = False
+) -> pd.DataFrame:
+    """
+    Reads a csv or parquet file from the given path and adds a column
+    with the update time based on Brazil timezone
+    """
+    if update_time:
+        dfr["update_time"] = pd.Timestamp.now(tz="America/Sao_Paulo")
+    if model_version is not None:
+        dfr["model_version"] = model_version
+    return dfr

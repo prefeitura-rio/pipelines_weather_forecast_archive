@@ -12,8 +12,7 @@ setup.py
 .vscode/*
 *.hdf
 **/gypscie/**
-
-
+**/test_flow/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

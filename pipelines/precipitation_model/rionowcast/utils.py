@@ -90,15 +90,15 @@ class GypscieApi:
         response.raise_for_status()
         return response.json()
 
-    def put(self, path, json_data=None):
+    def put(self, path, json=None):
         """
         put
         """
         self._refresh_token_if_needed()
-        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json)
         return response
 
-    def post(self, path, data: dict = None, json_data: dict = None, files: dict = None):
+    def post(self, path, data: dict = None, json: dict = None, files: dict = None):
         """
         post
         """
@@ -107,10 +107,10 @@ class GypscieApi:
             url=f"{self._base_url}{path}",
             headers=self._headers,
             data=data,
-            json=json_data,
+            json=json,
             files=files,
         )
-        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json)
         return response
 
 
@@ -132,6 +132,12 @@ def wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
     """
     Force flow wait for the end of data processing
     flow_type: dataflow or processor
+    Return:
+    {
+        "result": {},
+        "state": "string",
+        "status": "string"
+    }
     """
     if "task_id" in task_response.keys():
         _id = task_response.get("task_id")
@@ -139,13 +145,13 @@ def wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
         log(f"Error processing: task_id not found on response:{task_response}")
         # TODO: stop flow here
 
-    # Requisição do resultado da task_id
+    # Request to get the execution status
     path_flow_type = "status_workflow_run" if flow_type == "dataflow" else "status_processor_run"
     response = api.get(
         path=f"{path_flow_type}/" + _id,
     )
 
-    log(f"Response state: {response['state']}")
+    log(f"Execution status: {response}.")
     while response["state"] == "STARTED":
         sleep(5)
         response = wait_run(api, task_response)

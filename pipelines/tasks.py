@@ -257,7 +257,7 @@ def save_dataframe(
 
 @task
 def task_create_partitions(
-    data: pd.DataFrame,
+    data: Union[pd.DataFrame, str],
     partition_date_column: str,
     # partition_columns: List[str],
     savepath: str = "temp",
@@ -269,6 +269,8 @@ def task_create_partitions(
     """
     Create task for to_partitions
     """
+    if isinstance(data, str):
+        data = pd.read_csv(data) if data.endswith(".csv") else pd.read_parquet(data)
     data, partition_columns = parse_date_columns(data, partition_date_column)
     log(f"Created partition columns {partition_columns} and data first row now is {data.iloc[0]}")
     saved_files = to_partitions(
