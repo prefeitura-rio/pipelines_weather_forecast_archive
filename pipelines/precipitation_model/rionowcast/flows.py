@@ -10,11 +10,11 @@ from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
-from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
     create_table_and_upload_to_gcs,
     get_now_datetime,
@@ -81,7 +81,9 @@ with Flow(
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
     dataset_id = Parameter("dataset_id", default="clima_previsao_chuva", required=False)
-    table_id = Parameter("table_id", default="modelo_pluviometro_alertario_radar_mendanha_rionowcast", required=False)
+    table_id = Parameter(
+        "table_id", default="modelo_pluviometro_alertario_radar_mendanha_rionowcast", required=False
+    )
 
     # Dataset parameters
     station_type = Parameter("station_type", default="pluviometro", required=False)

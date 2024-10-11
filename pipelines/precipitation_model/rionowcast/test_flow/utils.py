@@ -87,7 +87,7 @@ class GypscieApi:
         self._refresh_token_if_needed()
         response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
         response.raise_for_status()
-        if 'application/json' in response.headers.get('Content-Type', ''):
+        if "application/json" in response.headers.get("Content-Type", ""):
             return response.json()
         else:
             return response
