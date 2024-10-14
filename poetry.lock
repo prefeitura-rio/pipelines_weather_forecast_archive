@@ -2973,8 +2973,8 @@ sgrc = ["aiohttp (>=3.8.5,<4.0.0)", "pendulum (>=2.1.2,<3.0.0)", "pytz (>=2023.3
 [package.source]
 type = "git"
 url = "https://github.com/prefeitura-rio/prefeitura-rio.git"
-reference = "62236b527b3528437b8d460f60c79ee39309b151"
-resolved_reference = "62236b527b3528437b8d460f60c79ee39309b151"
+reference = "2f6a5b9cfae4e214e694346a87c3ffbbe0954a70"
+resolved_reference = "2f6a5b9cfae4e214e694346a87c3ffbbe0954a70"
 
 [[package]]
 name = "proto-plus"

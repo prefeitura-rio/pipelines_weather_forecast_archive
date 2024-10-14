@@ -38,13 +38,12 @@ jobs:
 
       - name: Install Python dependencies for deploying
         run: |-
-          pip install -U pip "poetry<1.8"
-          poetry config virtualenvs.create false
-          poetry install --with dev --with ci
+          pip install -U pip uv
+          uv sync --extra dev --extra ci
 
       - name: Update image tag in constants
         run: |-
-          python .github/workflows/scripts/replace_docker_tag.py ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }} ${{ github.sha }}
+          uv run python .github/workflows/scripts/replace_docker_tag.py ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }} ${{ github.sha }}
 
       - name: Get changed files for code tree analysis
         id: files
@@ -54,7 +53,7 @@ jobs:
         id: code-tree-analysis
         continue-on-error: true
         run: |
-          python .github/workflows/scripts/code_tree_analysis.py "${{ steps.files.outputs.all }}" --write-to-file
+          uv run python .github/workflows/scripts/code_tree_analysis.py "${{ steps.files.outputs.all }}" --write-to-file
 
       - name: Write auth.toml
         run: |-
@@ -71,4 +70,4 @@ jobs:
 
       - name: Register Prefect flows
         run: |-
-          python .github/workflows/scripts/register_flows.py --project $PREFECT__SERVER__PROJECT --path pipelines/ --schedule --filter-affected-flows
+          uv run python .github/workflows/scripts/register_flows.py --project $PREFECT__SERVER__PROJECT --path pipelines/ --schedule --filter-affected-flows
