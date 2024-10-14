@@ -57,7 +57,8 @@ class Api:
             expires_at = (
                 datetime.now() + timedelta(seconds=30 * 60)
                 if len(expires_word) == 0
-                else datetime.now() + timedelta(seconds=int(response_json[expires_word[0]]))
+                else datetime.now()
+                + timedelta(seconds=int(response_json[expires_word[0]]))
             )
             log(f"Token {token[:10]} expires at {expires_at}")
         else:
@@ -99,7 +100,9 @@ class Api:
         get
         """
         self._refresh_token_if_needed()
-        response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
+        response = requests.get(
+            f"{self._base_url}{path}", headers=self._headers, timeout=timeout
+        )
         response.raise_for_status()
         return response.json()
 
@@ -108,7 +111,9 @@ class Api:
         put
         """
         self._refresh_token_if_needed()
-        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        response = requests.put(
+            f"{self._base_url}{path}", headers=self._headers, json=json_data
+        )
         return response
 
     def post(self, path, data: dict = None, json_data: dict = None, files: dict = None):

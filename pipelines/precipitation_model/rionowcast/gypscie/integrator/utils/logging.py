@@ -32,7 +32,10 @@ class Logger(object):
         """
         logfile = (root_basename.split(".")[0]) + ".log"
         parser.add_argument(
-            "--logfile", type=str, default=logfile, help="Log filename. Default __file__ basename"
+            "--logfile",
+            type=str,
+            default=logfile,
+            help="Log filename. Default __file__ basename",
         )
         parser.add_argument(
             "--loglevel",
@@ -56,7 +59,9 @@ class Logger(object):
             level (str, optional): a python logging level. Defaults to 'info'.
             verbose (bool, optional): if True, output logging on stdout. Defaults to False.
         """
-        assert level in cls.levels.keys(), f"level must be one of {list(cls.levels.keys())}"
+        assert (
+            level in cls.levels.keys()
+        ), f"level must be one of {list(cls.levels.keys())}"
         logger = cls.get_logger()
         logger.setLevel(cls.levels[level])
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")

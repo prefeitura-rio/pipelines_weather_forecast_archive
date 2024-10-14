@@ -45,11 +45,15 @@ def get_billing_project_id(
     Get billing project id
     """
     if not billing_project_id:
-        print("Billing project ID was not provided, trying to get it from environment variable")
+        print(
+            "Billing project ID was not provided, trying to get it from environment variable"
+        )
     try:
         bd_base = Base()
         billing_project_id = bd_base.config["gcloud-projects"][bd_project_mode]["name"]
-        print(f"Billing project ID was inferred from environment variables: {billing_project_id}")
+        print(
+            f"Billing project ID was inferred from environment variables: {billing_project_id}"
+        )
     except KeyError:
         pass
     if not billing_project_id:
@@ -117,7 +121,9 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
         "domain_id": domain_id,
         "name": str(filepath).split("/")[-1].split(".")[0]
         + "_"
-        + datetime.datetime.now().strftime("%Y%m%d%H%M%S"),  # pylint: disable=use-maxsplit-arg
+        + datetime.datetime.now().strftime(
+            "%Y%m%d%H%M%S"
+        ),  # pylint: disable=use-maxsplit-arg
     }
     print(type(data), data)
     files = {
@@ -265,7 +271,9 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
 
     print(f"Query used to download data:\n{query}")
 
-    dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
+    dfr = download_data_from_bigquery(
+        query=query, billing_project_id=billing_project_id
+    )
     if save_format == "csv":
         dfr.to_csv(f"{savepath}.csv", index=False)
     elif save_format == "parquet":
@@ -421,7 +429,9 @@ def desnormalize_data(array: np.ndarray):
     return array
 
 
-def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.DataFrame:
+def geolocalize_data(
+    prediction_datasets: np.ndarray, now_datetime: str
+) -> pd.DataFrame:
     """
     Geolocalize data using grid and add timestamp
 
@@ -523,7 +533,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "taxa_precipitacao_alertario"
-            dataset_info["destination_table_id"] = "preprocessamento_pluviometro_alertario"
+            dataset_info[
+                "destination_table_id"
+            ] = "preprocessamento_pluviometro_alertario"
     elif station_type == "weather_station":
         dataset_info = {
             "dataset_id": "clima_pluviometro",
@@ -537,7 +549,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
             ] = "preprocessamento_estacao_meteorologica_alertario"
         elif source == "inmet":
             dataset_info["table_id"] = "meteorologia_inmet"
-            dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
+            dataset_info[
+                "destination_table_id"
+            ] = "preprocessamento_estacao_meteorologica_inmet"
     else:
         dataset_info = {
             "dataset_id": "clima_radar",

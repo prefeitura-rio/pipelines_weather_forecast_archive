@@ -11,7 +11,6 @@ from typing import Dict, List  # Tuple
 import numpy as np
 import pandas as pd
 import pendulum
-
 # import basedosdados as bd
 # from basedosdados.download.base import google_client
 from basedosdados.upload.base import Base
@@ -25,9 +24,7 @@ from requests.exceptions import HTTPError
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.utils import (  # pylint: disable=E0611, E0401
-    GypscieApi,
-    wait_run,
-)
+    GypscieApi, wait_run)
 
 
 # noqa E302, E303
@@ -58,11 +55,15 @@ def get_billing_project_id(
     Get billing project id
     """
     if not billing_project_id:
-        log("Billing project ID was not provided, trying to get it from environment variable")
+        log(
+            "Billing project ID was not provided, trying to get it from environment variable"
+        )
     try:
         bd_base = Base()
         billing_project_id = bd_base.config["gcloud-projects"][bd_project_mode]["name"]
-        log(f"Billing project ID was inferred from environment variables: {billing_project_id}")
+        log(
+            f"Billing project ID was inferred from environment variables: {billing_project_id}"
+        )
     except KeyError:
         pass
     if not billing_project_id:
@@ -130,7 +131,9 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
         "domain_id": domain_id,
         "name": str(filepath)
         .split("/")[-1]
-        .split(".csv")[0],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
+        .split(".csv")[
+            0
+        ],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
     }
     log(type(data), data)
     files = {
@@ -280,7 +283,9 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
 
     log(f"Query used to download data:\n{query}")
 
-    dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
+    dfr = download_data_from_bigquery(
+        query=query, billing_project_id=billing_project_id
+    )
     if save_format == "csv":
         dfr.to_csv(f"{savepath}.csv", index=False)
     elif save_format == "parquet":
@@ -417,7 +422,9 @@ def get_output_dataset_on_gypscie(
     for i in prediction_dataset_ids:
         response = api.get(path="status_workflow_run/" + i)  # TODO change path
 
-        datasets.append(response.json()["result"].get("output_datasets"))  # TODO change get
+        datasets.append(
+            response.json()["result"].get("output_datasets")
+        )  # TODO change get
 
     return datasets
 
@@ -539,7 +546,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "taxa_precipitacao_alertario"
-            dataset_info["destination_table_id"] = "preprocessamento_pluviometro_alertario"
+            dataset_info[
+                "destination_table_id"
+            ] = "preprocessamento_pluviometro_alertario"
     elif station_type == "weather_station":
         dataset_info = {
             "dataset_id": "clima_pluviometro",
@@ -547,7 +556,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "meteorologia_inmet"
-            dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
+            dataset_info[
+                "destination_table_id"
+            ] = "preprocessamento_estacao_meteorologica_inmet"
     else:
         dataset_info = {
             "dataset_id": "clima_radar",

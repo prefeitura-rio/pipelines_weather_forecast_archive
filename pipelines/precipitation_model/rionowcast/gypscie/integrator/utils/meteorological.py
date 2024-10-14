@@ -67,6 +67,7 @@ def cyclic_wind_encoding(wind_speed: pd.Series, wind_direction: pd.Series):
         with U and V wind components
     """
     wind_u, wind_v = wind_components(
-        wind_speed.to_numpy() * units.meter_per_second, wind_direction.to_numpy() * units.deg
+        wind_speed.to_numpy() * units.meter_per_second,
+        wind_direction.to_numpy() * units.deg,
     )
     return wind_u.magnitude, wind_v.magnitude

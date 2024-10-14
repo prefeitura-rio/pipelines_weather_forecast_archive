@@ -17,7 +17,6 @@ station_type coloca rain_gauge ou weather_station
 """
 
 import argparse
-
 # import os
 # import sys
 import warnings
@@ -27,15 +26,11 @@ import mlflow
 import numpy as np
 import pandas as pd
 from utils.filesystem import make_path  # , destroy_path
-
 # from dotenv import load_dotenv
 # from utils.logging import Logger
 # from src.utils.datalake import DataLakeWrapper
-from utils.meteorological import (
-    cyclic_month_encoding,
-    cyclic_time_encoding,
-    cyclic_wind_encoding,
-)
+from utils.meteorological import (cyclic_month_encoding, cyclic_time_encoding,
+                                  cyclic_wind_encoding)
 
 warnings.filterwarnings("ignore")
 
@@ -271,7 +266,9 @@ class DataPreprocessor:
             dfr[col] = pd.to_numeric(dfr[col], errors="coerce")
         print("Building string datetime column...")
         print(f"isna: {dfr.isna().sum()}")
-        dfr["datetime"] = dfr["data_particao"].astype(str) + " " + dfr["horario"].astype(str)
+        dfr["datetime"] = (
+            dfr["data_particao"].astype(str) + " " + dfr["horario"].astype(str)
+        )
         print(dfr.iloc[0])
         print(dfr.iloc[1])
         print(f"isna: {dfr.isna().sum()}")
@@ -311,7 +308,9 @@ class DataPreprocessor:
             #     "There are temporal duplicates with different precipitation values"
             # )
             print("There are temporal duplicates with different precipitation values")
-        dfr_to_drop = dfr_temporal_duplicates[dfr_temporal_duplicates[feature_columns].isna()]
+        dfr_to_drop = dfr_temporal_duplicates[
+            dfr_temporal_duplicates[feature_columns].isna()
+        ]
         # print(f"Total drops: {dfr_to_drop.shape[0]}")
         dfr = dfr[~dfr.index.isin(dfr_to_drop.index)]
         current_n_rows = dfr.shape[0]
@@ -455,7 +454,9 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
             # self._logger.info('Encoding cyclic wind')
 
             print("Encoding cyclic wind")
-            dfr["wind_u"], dfr["wind_v"] = cyclic_wind_encoding(dfr["wind_speed"], dfr["wind_dir"])
+            dfr["wind_u"], dfr["wind_v"] = cyclic_wind_encoding(
+                dfr["wind_speed"], dfr["wind_dir"]
+            )
             # self._logger.info('Encoding cyclic time')
 
             print("Encoding cyclic time")
@@ -593,7 +594,10 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             dfr.reset_index(drop=True, inplace=True)
 
             print(dfr.shape)
-            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"}  # ?
+            attrs = {
+                "naming_authority": "Alerta Rio",
+                "timezone": "America/Sao_Paulo",
+            }  # ?
             attrs.update(self.instrument)  # ?
             attrs.update(self.variables)  # ?
 
@@ -753,10 +757,16 @@ def parameter_parser():
     # parser = Logger.add_log_parameters(parser, os.path.basename(__file__))
 
     parser.add_argument(
-        "-t", "--transform", action="store_true", help="Perform light transform process."
+        "-t",
+        "--transform",
+        action="store_true",
+        help="Perform light transform process.",
     )
     parser.add_argument(
-        "-p", "--preprocessing", action="store_true", help="Perform heavy transform process."
+        "-p",
+        "--preprocessing",
+        action="store_true",
+        help="Perform heavy transform process.",
     )
     parser.add_argument(
         "-s",
@@ -774,7 +784,9 @@ Possible values: [rain_gauge, weather_station]. Default: [rain_gauge]",
         help="List of 4-digit number equal to or greater than 1970. \
 If not passed, process all available years.",
     )
-    parser.add_argument("--skip_hbv_fixer", action="store_true", help="Does not fix HBV column")
+    parser.add_argument(
+        "--skip_hbv_fixer", action="store_true", help="Does not fix HBV column"
+    )
     parser.add_argument("--dataset1", type=str, help="Description of dataset1")
     # parser.add_argument("station1", type=str, help="Dataset with station latlon for dataset1")
     # parser.add_argument("dataset2", type=str, help="Description of dataset2")
