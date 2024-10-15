@@ -31,7 +31,6 @@ infisical = {version = "^1.4.2, <1.6", optional = true}
 jinja2 = {version = "^3.1.2", optional = true}
 joblib = "^1.2.0"
 kaleido = "0.2.1"
-loguru = "^0.7.0"
 matplotlib = "^3.5.2"
 netcdf4 = "^1.7.1.post2"
 numpy = {version = "^1.23.3", optional = true}
@@ -128,6 +127,9 @@ sgrc = ["aiohttp", "pendulum", "pytz", "requests"]
 
 actions = ["ruamel-yaml"]
 
+[tool.poetry.group.dev]
+optional = true
+
 [tool.poetry.group.dev.dependencies]
 black = "^22.3.0"
 flake8 = "^4.0.1"
@@ -138,6 +140,14 @@ pdoc3 = "^0.10.0"
 pre-commit = "^2.18.1"
 pytest-cov = "^3.0.0"
 taskipy = "^1.12.0"
+
+[tool.poetry.group.ci]
+optional = true
+
+[tool.poetry.group.ci.dependencies]
+networkx = "^3.1"
+loguru = "^0.7.0"
+typer = "^0.9.0"
 
 [tool.black]
 line-length = 100
