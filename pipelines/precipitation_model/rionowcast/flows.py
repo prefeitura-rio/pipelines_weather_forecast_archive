@@ -10,7 +10,6 @@ from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
@@ -22,7 +21,7 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401; update_schedule,
+from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
 from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
@@ -41,7 +40,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     get_prediction_on_gypscie,
     query_data_from_gcp,
     register_dataset_on_gypscie,
-    task_wait_run,
+    # task_wait_run,
 )
 from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
 
@@ -139,9 +138,10 @@ with Flow(
         project_id=project_id,
         parameters=processor_parameters,
     )
-    task_wait_run(api, task_response, flow_type)
+    # task_wait_run(api, task_response, flow_type)
     output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
-
+    # adicionar função de download do dataset
+    treated_datasets = None
     # TODO: criar função para adicionar a coluna de update_date
     # Save pre-treated data on local file with partitions
     now_datetime = get_now_datetime()

@@ -4,8 +4,7 @@ Utils for rj-cor
 """
 import json
 from os import getenv
-from time import sleep
-from typing import Callable, Dict
+from typing import Callable
 
 import basedosdados as bd
 import pandas as pd

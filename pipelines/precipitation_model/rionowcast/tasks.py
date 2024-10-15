@@ -10,7 +10,6 @@ from typing import Dict, List  # Tuple
 
 import numpy as np
 import pandas as pd
-import pendulum
 
 # import basedosdados as bd
 # from basedosdados.download.base import google_client
@@ -257,7 +256,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-    savepath = directory_path / f"{dataset_id}_{table_id}"  ### TODO:
+    savepath = directory_path / f"{dataset_id}_{table_id}"  # TODO:
 
     # pylint: disable=consider-using-f-string
     query = """

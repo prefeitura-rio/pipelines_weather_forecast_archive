@@ -7,7 +7,7 @@ pipelines/precipitation_model/impa/models/models/
 pipelines/precipitation_model/impa/models/personal/
 pipelines/precipitation_model/impa/models/radar_cal/
 pipelines/precipitation_model/impa/models/lightning_logs/
-
+**/test_flow/** */
 
 # User-defined
 .replit
