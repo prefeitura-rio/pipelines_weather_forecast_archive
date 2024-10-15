@@ -17,12 +17,13 @@ jobs:
 
       - name: Install Python dependencies for deploying
         run: |-
-          pip install -U pip uv
-          uv sync --extra dev --extra ci
+          pip install -U pip "poetry<1.8"
+          poetry config virtualenvs.create false
+          poetry install --with dev --with ci
 
       - name: Check if `prefect build` works
         run: |
-          uv run prefect build
+          prefect build
 
       - name: Get changed files for code tree analysis
         id: files
@@ -32,7 +33,7 @@ jobs:
         id: code-tree-analysis
         continue-on-error: true
         run: |
-          uv run python .github/workflows/scripts/code_tree_analysis.py "${{ steps.files.outputs.all }}"
+          python .github/workflows/scripts/code_tree_analysis.py "${{ steps.files.outputs.all }}"
 
       - name: Delete previous comments
         uses: izhangzhihao/delete-comment@master

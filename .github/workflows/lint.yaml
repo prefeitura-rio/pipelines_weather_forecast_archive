@@ -15,21 +15,20 @@ jobs:
         uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf
         with:
           dockerfile: Dockerfile
-          ignore: DL3008
 
       - name: Set up Python
         uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e
         with:
           python-version: "3.10"
 
-      - name: Set up uv and upgrade pip
+      - name: Set up Poetry and upgrade pip
         run: |
-          pip install -U pip uv
+          pip install -U pip "poetry<1.8"
 
       - name: Install dependencies
         run: |
-          uv sync --extra dev --extra ci
+          poetry config virtualenvs.create false && poetry install --with dev --with ci
 
       - name: Lint with black, isort and flake8
         run: |
-          uv run task lint
+          task lint
