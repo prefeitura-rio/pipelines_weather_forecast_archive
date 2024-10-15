@@ -1,9 +1,8 @@
 [tool.poetry]
-authors = ["acataos <acatao1999@gmail.com>"]
-description = ""
-name = "rio-rain-integration-test"
-readme = "README.md"
+name = "pipelines"
 version = "0.1.0"
+description = ""
+authors = ["Gabriel Gazola Milan <gabriel.gazola@poli.ufrj.br>"]
 
 [tool.poetry.dependencies]
 aiohttp = {version = "^3.8.5", optional = true}
