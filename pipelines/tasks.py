@@ -16,12 +16,14 @@ from prefect.triggers import all_successful
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.pandas import (  # pylint: disable=E0611, E0401
-    parse_date_columns, to_partitions)
-from prefeitura_rio.pipelines_utils.redis_pal import \
-    get_redis_client  # pylint: disable=E0611, E0401
+    parse_date_columns,
+    to_partitions,
+)
+from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
+    get_redis_client,
+)
 
-from pipelines.utils import \
-    treat_redis_output  # get_redis_client_from_infisical,
+from pipelines.utils import treat_redis_output  # get_redis_client_from_infisical,
 
 # from redis_pal import RedisPal
 
@@ -46,15 +48,11 @@ def task_get_redis_client(
     Returns:
         The Redis client.
     """
-    redis_host = get_secret(infisical_host_env, path=infisical_secrets_path)[
-        infisical_host_env
-    ]
+    redis_host = get_secret(infisical_host_env, path=infisical_secrets_path)[infisical_host_env]
     redis_port = int(
         get_secret(infisical_port_env, path=infisical_secrets_path)[infisical_port_env]
     )
-    redis_db = int(
-        get_secret(infisical_db_env, path=infisical_secrets_path)[infisical_db_env]
-    )
+    redis_db = int(get_secret(infisical_db_env, path=infisical_secrets_path)[infisical_db_env])
     redis_password = get_secret(infisical_password_env, path=infisical_secrets_path)[
         infisical_password_env
     ]
@@ -67,9 +65,7 @@ def task_get_redis_client(
 
 
 @task
-def task_build_redis_hash(
-    dataset_id: str, table_id: str, name: str = None, mode: str = "prod"
-):
+def task_build_redis_hash(dataset_id: str, table_id: str, name: str = None, mode: str = "prod"):
     """
     Helper function for building a key to redis
     """
@@ -277,9 +273,7 @@ def task_create_partitions(
     Create task for to_partitions
     """
     data, partition_columns = parse_date_columns(data, partition_date_column)
-    log(
-        f"Created partition columns {partition_columns} and data first row now is {data.iloc[0]}"
-    )
+    log(f"Created partition columns {partition_columns} and data first row now is {data.iloc[0]}")
     saved_files = to_partitions(
         data=data,
         partition_columns=partition_columns,

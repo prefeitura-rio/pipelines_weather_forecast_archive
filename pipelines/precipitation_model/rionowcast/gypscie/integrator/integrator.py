@@ -12,8 +12,10 @@ import mlflow
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+
 # from utils.datalake import DataLakeWrapper
 from utils.date_time import is_valid_date, today
+
 # from dotenv import load_dotenv
 from utils.logging import Logger
 
@@ -323,9 +325,7 @@ class DataIntegrator:
     def __init__(self) -> None:
         self._logger = Logger.get_logger()
         # self._dl = DataLakeHandler()
-        self._feature_handler = self._get_feature_handler(
-            args.non_shared_feature_handler
-        )
+        self._feature_handler = self._get_feature_handler(args.non_shared_feature_handler)
         self._datasets = []
         self._all_features = list()
         self._all_non_features = list()
@@ -365,9 +365,7 @@ Source will be ignored and data integration will continue."
         if len(self._datasets) > 1:
             non_shared_features = self._get_non_shared_elements(self._all_features)
             self._logger.debug(f"Non shared features: {non_shared_features}")
-            non_shared_non_features = self._get_non_shared_elements(
-                self._all_non_features
-            )
+            non_shared_non_features = self._get_non_shared_elements(self._all_non_features)
             self._logger.debug(f"Non shared non features: {non_shared_non_features}")
             columns_order = None
             self._integrated_data = pd.DataFrame(data=None)
@@ -379,9 +377,7 @@ Source will be ignored and data integration will continue."
                     columns_order = df.columns
                 else:
                     df = df[columns_order]
-                self._integrated_data = pd.concat(
-                    [self._integrated_data, df], ignore_index=True
-                )
+                self._integrated_data = pd.concat([self._integrated_data, df], ignore_index=True)
                 del df
             self._integrated_data = self._integrated_data.reset_index(drop=True)
         else:

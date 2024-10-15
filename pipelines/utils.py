@@ -12,12 +12,15 @@ import pandas as pd
 import pendulum
 from google.cloud import storage
 from loguru import logger
+
 # from redis_pal import RedisPal
 # import pipelines.constants
-from prefeitura_rio.pipelines_utils.infisical import \
-    get_secret  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.redis_pal import \
-    get_redis_client  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import (
+    get_secret,  # pylint: disable=E0611, E0401
+)
+from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
+    get_redis_client,
+)
 
 from pipelines.utils.utils import log
 
@@ -28,9 +31,7 @@ from pipelines.utils.utils import log
 ###############
 
 
-def getenv_or_action(
-    key: str, action: Callable[[str], None], default: str = None
-) -> str:
+def getenv_or_action(key: str, action: Callable[[str], None], default: str = None) -> str:
     """Get env or action"""
     value = getenv(key)
     if value is None:
@@ -91,15 +92,11 @@ def get_redis_client_from_infisical(
     Returns:
         The Redis client.
     """
-    redis_host = get_secret(infisical_host_env, path=infisical_secrets_path)[
-        infisical_host_env
-    ]
+    redis_host = get_secret(infisical_host_env, path=infisical_secrets_path)[infisical_host_env]
     redis_port = int(
         get_secret(infisical_port_env, path=infisical_secrets_path)[infisical_port_env]
     )
-    redis_db = int(
-        get_secret(infisical_db_env, path=infisical_secrets_path)[infisical_db_env]
-    )
+    redis_db = int(get_secret(infisical_db_env, path=infisical_secrets_path)[infisical_db_env])
     redis_password = get_secret(infisical_password_env, path=infisical_secrets_path)[
         infisical_password_env
     ]
@@ -112,9 +109,7 @@ def get_redis_client_from_infisical(
     )
 
 
-def build_redis_key(
-    dataset_id: str, table_id: str, name: str = None, mode: str = "prod"
-):
+def build_redis_key(dataset_id: str, table_id: str, name: str = None, mode: str = "prod"):
     """
     Helper function for building a key to redis
     """
@@ -207,14 +202,10 @@ def save_updated_rows_on_redis(  # pylint: disable=R0914, R0913
     else:
         # Convert data in dictionary in format with unique_id in key and last updated time as value
         # Example > {"12": "2022-06-06 14:45:00"}
-        last_updates = {
-            k.decode("utf-8"): v.decode("utf-8") for k, v in last_updates.items()
-        }
+        last_updates = {k.decode("utf-8"): v.decode("utf-8") for k, v in last_updates.items()}
 
         # Convert dictionary to dataframe
-        last_updates = pd.DataFrame(
-            last_updates.items(), columns=[unique_id, "last_update"]
-        )
+        last_updates = pd.DataFrame(last_updates.items(), columns=[unique_id, "last_update"])
 
         log(f"Redis key: {key}\nRedis actual values:\n {last_updates}")
 
@@ -224,14 +215,10 @@ def save_updated_rows_on_redis(  # pylint: disable=R0914, R0913
 
     # dataframe and last_updates need to have the same index, in our case unique_id
     missing_in_dfr = [
-        i
-        for i in last_updates[unique_id].unique()
-        if i not in dataframe[unique_id].unique()
+        i for i in last_updates[unique_id].unique() if i not in dataframe[unique_id].unique()
     ]
     missing_in_updates = [
-        i
-        for i in dataframe[unique_id].unique()
-        if i not in last_updates[unique_id].unique()
+        i for i in dataframe[unique_id].unique() if i not in last_updates[unique_id].unique()
     ]
 
     # If unique_id doesn't exists on updates we create a fake date for this station on updates
@@ -335,9 +322,7 @@ def compare_actual_df_with_redis_df(
         .query('_merge == "left_only"')
         .drop("_merge", axis=1)
     )
-    log(
-        f"\nDf resulted from the difference between dft_redis and dfr: \n{dfr_diff.head()}"
-    )
+    log(f"\nDf resulted from the difference between dft_redis and dfr: \n{dfr_diff.head()}")
 
     updated_dfr_redis = pd.concat([dfr_redis, dfr_diff[columns]])
 
@@ -460,6 +445,4 @@ def download_blob(bucket_name, source_blob_name, destination_file_name) -> None:
     blob = bucket.blob(source_blob_name)
     blob.download_to_filename(destination_file_name)
 
-    print(
-        f"Blob {source_blob_name} downloaded to file path {destination_file_name}. successfully "
-    )
+    print(f"Blob {source_blob_name} downloaded to file path {destination_file_name}. successfully ")

@@ -85,9 +85,7 @@ class GypscieApi:
         get
         """
         self._refresh_token_if_needed()
-        response = requests.get(
-            f"{self._base_url}{path}", headers=self._headers, timeout=timeout
-        )
+        response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
         response.raise_for_status()
         if "application/json" in response.headers.get("Content-Type", ""):
             return response.json()
@@ -99,9 +97,7 @@ class GypscieApi:
         put
         """
         self._refresh_token_if_needed()
-        response = requests.put(
-            f"{self._base_url}{path}", headers=self._headers, json=json_data
-        )
+        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json_data)
         return response
 
     def post(self, path, data: dict = None, json: dict = None, files: dict = None):
@@ -152,9 +148,7 @@ def wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
         # TODO: stop flow here
 
     # Requisição do resultado da task_id
-    path_flow_type = (
-        "status_workflow_run" if flow_type == "dataflow" else "status_processor_run"
-    )
+    path_flow_type = "status_workflow_run" if flow_type == "dataflow" else "status_processor_run"
     response = api.get(
         path=f"{path_flow_type}/" + _id,
     )
