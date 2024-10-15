@@ -11,7 +11,11 @@ python = ">=3.9,<3.11"
 # basedosdados = { git = "https://github.com/basedosdados/mais", rev = "7a91bc3ab9b6d846c2e809129b31994a1a81fc11", subdirectory = "python-package", extras = [
 #     "upload",
 # ] }
-basedosdados = {version = "2.0.0b22", extras = ["upload"]}
+prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio.git", rev = "62236b527b3528437b8d460f60c79ee39309b151", branch = "feat/reimplement-templates", extras = [
+    "pipelines",
+    "pipelines-templates",
+] }
+basedosdados = {version = "^2.0.0b15", extras = ["upload"]}
 beartype = "^0.18.5"
 boto3 = "^1.35.27"
 croniter = {version = "^2.0.1", optional = true}
