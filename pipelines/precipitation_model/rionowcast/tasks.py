@@ -8,7 +8,7 @@ from pathlib import Path
 from time import sleep
 from typing import Dict, List  # Tuple
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 
 # import basedosdados as bd
@@ -124,12 +124,12 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
     }
     """
     log(f"\nStart registring dataset by sending {filepath} Data to Gypscie")
-
+    # pylint: disable=use-maxsplit-arg
     data = {
         "domain_id": domain_id,
         "name": str(filepath)
         .split("/")[-1]
-        .split(".csv")[0],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
+        .split(".csv")[0],  # TODO: nome tem que ser único
     }
     log(type(data), data)
     files = {
@@ -326,6 +326,15 @@ def execute_prediction_on_gypscie(
 
 @task
 def task_wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
+    """
+    Wait for a task to finish and return its result.
+    Args:
+    - api: Gypscie API instance
+    - task_response: Response from a Gypscie API task request
+    - flow_type: str, either "dataflow" or "processor", indicating the type of flow
+    Returns:
+    - A dictionary containing the result of the task, including its state and output datasets
+    """
     return wait_run(api, task_response, flow_type)
 
 
@@ -447,6 +456,8 @@ def geolocalize_data(prediction_datasets, now_datetime: str) -> pd.DataFrame:
     Expected columns: latitude, longitude, janela_predicao,
     valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
     """
+    now_datetime = pd.to_datetime(now_datetime)
+    prediction_datasets["data_predicao"] = now_datetime
     return prediction_datasets
 
 
@@ -518,6 +529,7 @@ def create_image(data):
         plt.show()
         return save_image_path
     """
+    data = data - data.min()
     save_image_path = "image.png"
 
     return save_image_path

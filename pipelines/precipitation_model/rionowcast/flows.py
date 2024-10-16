@@ -38,7 +38,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     get_dataset_info,
     get_dataset_processor_info,
     get_output_dataset_ids_on_gypscie,
-    get_prediction_on_gypscie,
+    # get_prediction_on_gypscie,
     query_data_from_gcp,
     register_dataset_on_gypscie,
 )
@@ -111,7 +111,7 @@ with Flow(
                 billing_project_id="rj-cor",
                 start_date=start_date,
                 end_date=end_date,
-                format="parquet",
+                save_format="parquet",
             )
 
         with case(station_type, "radar"):
@@ -187,7 +187,8 @@ preprocessing_previsao_chuva_rionowcast.run_config = KubernetesRun(
 # preprocessing_previsao_chuva_rionowcast.schedule = update_schedule
 
 # https://github.com/prefeitura-rio/pipelines_rj_escritorio/blob/
-# 2433238db27adb1213059832f238495b9ecb5043/pipelines/deteccao_alagamento_cameras/flooding_detection/flows.py#L112
+# 2433238db27adb1213059832f238495b9ecb5043/pipelines/deteccao_alagamento_cameras/
+# flooding_detection/flows.py#L112
 # https://linen.prefect.io/t/13543083/how-do-i-run-the-same-subflow-concurrently-for-items-in-a-li
 
 
@@ -260,7 +261,7 @@ with Flow(
         billing_project_id="rj-cor",
         start_date=start_date,
         end_date=end_date,
-        format="parquet",
+        save_format="parquet",
     )
     radar_mendanha_path = query_data_from_gcp(
         radar_dataset_info["dataset_id"],
@@ -294,7 +295,8 @@ with Flow(
         model_params,
     )
     prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
-    prediction_datasets = get_prediction_on_gypscie(api, prediction_dataset_ids)
+    # prediction_datasets = get_prediction_on_gypscie(api, prediction_dataset_ids)
+    prediction_datasets = None
     desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     now_datetime = get_now_datetime()
     geolocalized_prediction_datasets = geolocalize_data(
