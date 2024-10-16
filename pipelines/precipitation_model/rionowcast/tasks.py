@@ -127,9 +127,7 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
     # pylint: disable=use-maxsplit-arg
     data = {
         "domain_id": domain_id,
-        "name": str(filepath)
-        .split("/")[-1]
-        .split(".csv")[0],  # TODO: nome tem que ser único
+        "name": str(filepath).split("/")[-1].split(".csv")[0],  # TODO: nome tem que ser único
     }
     log(type(data), data)
     files = {

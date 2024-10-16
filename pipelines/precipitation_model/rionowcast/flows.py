@@ -25,7 +25,7 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; task_wait_run,
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; task_wait_run,; get_prediction_on_gypscie,
     access_api,
     calculate_start_and_end_date,
     create_image,
@@ -38,7 +38,6 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     get_dataset_info,
     get_dataset_processor_info,
     get_output_dataset_ids_on_gypscie,
-    # get_prediction_on_gypscie,
     query_data_from_gcp,
     register_dataset_on_gypscie,
 )
