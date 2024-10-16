@@ -200,6 +200,7 @@ def get_storage_destination(path: str, filename: str = None) -> str:
     log(f"File destination_blob_name {destination_blob_name}")
     return destination_blob_name
 
+
 # @task(nout=2)
 # def get_storage_destination(filename: str, path: str) -> Tuple[str, str]:
 #     """
@@ -235,6 +236,7 @@ def upload_files_to_storage(
         blob.upload_from_filename(file_path)
 
         log(f"File {file_name} sent to {destination_folder} on bucket {bucket_name}.")
+
 
 # def upload_files_to_storage(
 #     project: str,
