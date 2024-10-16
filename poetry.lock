@@ -6572,4 +6572,4 @@ sgrc = ["aiohttp", "pendulum", "pytz", "requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "a0f834422d3ec9211f11c81f22e125618cdeb1788ea2cae6ac224ee9114b42cc"
+content-hash = "c27d3ea1dd4ffeb56fad4622de35e039398167932ec513d448e7e887cc0bb442"

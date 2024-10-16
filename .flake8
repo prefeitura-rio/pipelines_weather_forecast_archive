@@ -4,4 +4,4 @@ max-line-length = 100
 exclude =
     **/rionowcast/gypscie/*
     **/rionowcast/test_flow/*
-    **/script.py
+    script.py

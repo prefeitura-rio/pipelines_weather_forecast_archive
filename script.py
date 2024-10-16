@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 # script.py
-import os
-
 with open("requirements_venv.txt") as f:
     requirements = f.readlines()
 
