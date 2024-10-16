@@ -4,10 +4,10 @@ ARG PYTHON_VERSION=3.10-slim
 # Start Python image
 FROM python:${PYTHON_VERSION}
 
-# Install git and other dependencies
+# Install git, gcc, build-essential, and other dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 && \
+    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 build-essential gcc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
