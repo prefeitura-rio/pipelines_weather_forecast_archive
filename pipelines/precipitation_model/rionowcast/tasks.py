@@ -233,6 +233,10 @@ def calculate_start_and_end_date(
     Calculates the start and end date based on the hours from past
     """
     end_date = datetime.datetime.now()
+    if not isinstance(hours_from_past, int):
+        log(f"Type of hours_from_past is {type(hours_from_past)}")
+        # hours_from_past = int(hours_from_past)
+        hours_from_past = 6
     start_date = end_date - datetime.timedelta(hours=hours_from_past)
     return start_date, end_date
 
