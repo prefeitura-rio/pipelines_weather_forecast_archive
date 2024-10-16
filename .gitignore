@@ -12,7 +12,6 @@ pipelines/precipitation_model/impa/models/lightning_logs/
 # User-defined
 .replit
 replit.nix
-**/data/
 test_local.py
 pylint.txt
 test.py
