@@ -422,7 +422,7 @@ def get_output_dataset_on_gypscie(
 
 
 @task
-def desnormalize_data(array: np.numpy):
+def desnormalize_data(array):
     """
     Desnormalize data
 
@@ -435,7 +435,7 @@ def desnormalize_data(array: np.numpy):
 
 
 @task
-def geolocalize_data(prediction_datasets: np.numpy, now_datetime: str) -> pd.DataFrame:
+def geolocalize_data(prediction_datasets, now_datetime: str) -> pd.DataFrame:
     """
     Geolocalize data using grid and add timestamp
 
