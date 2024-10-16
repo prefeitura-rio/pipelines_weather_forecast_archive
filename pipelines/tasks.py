@@ -23,7 +23,7 @@ from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611,
     get_redis_client,
 )
 
-from pipelines.utils import treat_redis_output  # get_redis_client_from_infisical,
+from pipelines.utils_wf import treat_redis_output  # get_redis_client_from_infisical,
 
 # from redis_pal import RedisPal
 
