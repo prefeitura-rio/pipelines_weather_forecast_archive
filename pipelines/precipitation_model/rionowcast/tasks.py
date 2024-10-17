@@ -606,12 +606,15 @@ def path_to_dfr(path: str) -> pd.DataFrame:
     """
     Reads a csv or parquet file from the given path and returns a dataframe
     """
-    if path.endswith(".csv"):
-        dfr = pd.read_csv(path)
-    elif path.endswith(".parquet"):
-        dfr = pd.read_parquet(path)
-    else:
-        raise ValueError("File extension not supported")
+    try:
+        if path.endswith(".csv"):
+            dfr = pd.read_csv(path)
+        elif path.endswith(".parquet"):
+            dfr = pd.read_parquet(path)
+        else:
+            raise ValueError("File extension not supported")
+    except AttributeError as error:
+        log(f"type(path) {type(path)} error {error}")
     return dfr
 
 

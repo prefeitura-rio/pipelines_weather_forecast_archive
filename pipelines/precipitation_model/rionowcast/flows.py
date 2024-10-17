@@ -145,7 +145,7 @@ with Flow(
     wait_run = task_wait_run(api, dataset_processor_task_id, flow_type="processor")
     dataset_name = get_dataset_name_on_gypscie(api, wait_run["dataset_id"])
     dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
-    dfr_ = path_to_dfr(dataset_path)
+    dfr_ = path_to_dfr(path=dataset_path)
     # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
     dfr = add_columns_on_dfr(dfr_, model_version, update_time=True)
 
