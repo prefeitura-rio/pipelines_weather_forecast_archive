@@ -27,7 +27,7 @@ class GypscieApi:
         if username is None or password is None:
             raise ValueError("Must be set refresh token or username with password")
 
-        self._base_url = base_url or "https://gypscie.dados.rio/api/"
+        self._base_url = base_url or "https://twinscie.dexl.lncc.br/api/"
         self._username = username
         self._password = password
         self._token_callback = token_callback
