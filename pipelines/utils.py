@@ -17,11 +17,10 @@ from loguru import logger
 from prefeitura_rio.pipelines_utils.infisical import (
     get_secret,  # pylint: disable=E0611, E0401
 )
+from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
     get_redis_client,
 )
-
-from prefeitura_rio.pipelines_utils.logging import log
 
 ###############
 #
