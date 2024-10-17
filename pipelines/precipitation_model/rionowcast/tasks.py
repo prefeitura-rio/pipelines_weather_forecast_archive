@@ -331,7 +331,7 @@ def execute_prediction_on_gypscie(
         raise ENDRUN(state=task_state)
 
     log(f"Prediction ended. Response: {response}")
-    return response['result'].get("output_datasets")
+    return response["result"].get("output_datasets")
 
 
 @task
