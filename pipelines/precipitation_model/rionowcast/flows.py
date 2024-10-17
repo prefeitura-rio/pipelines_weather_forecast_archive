@@ -22,14 +22,12 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
-    # update_schedule,
+from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401; update_schedule,
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; calculate_start_and_end_date,; get_prediction_on_gypscie,
     access_api,
     add_columns_on_dfr,
-    # calculate_start_and_end_date,
     create_image,
     desnormalize_data,
     download_datasets_from_gypscie,
@@ -42,7 +40,6 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     get_dataset_name_on_gypscie,
     get_dataset_processor_info,
     get_output_dataset_ids_on_gypscie,
-    # get_prediction_on_gypscie,
     path_to_dfr,
     query_data_from_gcp,
     register_dataset_on_gypscie,
@@ -53,7 +50,6 @@ from pipelines.tasks import (  # pylint: disable=E0611, E0401
     task_create_partitions,
     upload_files_to_storage,
 )
-
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
@@ -149,9 +145,7 @@ with Flow(
     )
     wait_run = task_wait_run(api, dataset_processor_task_id, flow_type="processor")
     dataset_name = get_dataset_name_on_gypscie(wait_run["dataset_id"])
-    dataset_path = download_datasets_from_gypscie(
-        api, dataset_names=[dataset_name], wait=wait_run
-    )
+    dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
     dfr_ = path_to_dfr(dataset_path)
     # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
     dfr = add_columns_on_dfr(dfr_, model_version, update_time=True)
@@ -246,13 +240,11 @@ with Flow(
         required=False,
         description="Id of the model saved as a dataset",
     )  # mudar.
-    output_function_id = Parameter(
-        "output_function_id", default=62, required=False
-    )  # mudar.
+    output_function_id = Parameter("output_function_id", default=62, required=False)  # mudar.
     # radar_data_id = Parameter("radar_data_id", default=25, required=False)
     # rain_gauge_data_id = Parameter("rain_gauge_data_id", default=22, required=False)
     grid_data_id = Parameter(
-        "grid_data_id", default=177, required=False  #, description="Grid ID saved as a dataset"
+        "grid_data_id", default=177, required=False  # , description="Grid ID saved as a dataset"
     )  # mudar.
 
     # Parameters for saving data on GCP

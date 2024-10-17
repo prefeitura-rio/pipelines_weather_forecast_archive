@@ -29,7 +29,7 @@ update_schedule = Schedule(
                 "hours_from_past": 6,
                 "start_date": None,
                 "end_date": None,
-                'environment_id': 1,
+                "environment_id": 1,
                 "domain_id": 1,
                 "project_id": 1,
                 "workflow_id": 36,

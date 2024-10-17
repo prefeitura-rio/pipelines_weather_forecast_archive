@@ -11,7 +11,6 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-
 from basedosdados.upload.base import Base
 from google.cloud import bigquery
 from prefect import task
@@ -476,7 +475,7 @@ def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.D
     Expected columns: latitude, longitude, janela_predicao,
     valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
     """
-    now_datetime = now_datetime+1
+    now_datetime = now_datetime + 1
     return prediction_datasets
 
 
@@ -549,7 +548,7 @@ def create_image(data) -> List:
         return save_image_path
     """
     save_image_path = "image.png"
-    data = data+1
+    data = data + 1
     return save_image_path
 
 
