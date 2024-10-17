@@ -330,8 +330,8 @@ def execute_prediction_on_gypscie(
         task_state = Failed(failed_message)
         raise ENDRUN(state=task_state)
 
-    print(f"Prediction ended. Response: {response}")
-    return response.get("output_datasets")
+    log(f"Prediction ended. Response: {response}")
+    return response['result'].get("output_datasets")
 
 
 @task
@@ -429,6 +429,7 @@ def get_dataset_name_on_gypscie(
     """
     Get datasets name
     """
+    log(f"dataset_id input: {dataset_id}")
     dataset_id = dataset_id[0]
     try:
         response = api.get(path="datasets/" + dataset_id)
