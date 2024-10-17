@@ -15,9 +15,9 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_inject_bd_credentials,
 )
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
-    create_table_and_upload_to_gcs,
+    # create_table_and_upload_to_gcs,
     get_now_datetime,
-    task_run_dbt_model_task,
+    # task_run_dbt_model_task,
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
@@ -26,29 +26,29 @@ from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disa
 )
 from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     access_api,
-    add_columns_on_dfr,
-    create_image,
-    desnormalize_data,
+    # add_columns_on_dfr,
+    # create_image,
+    # desnormalize_data,
     download_datasets_from_gypscie,
     execute_dataset_processor,
     execute_prediction_on_gypscie,
-    geolocalize_data,
+    # geolocalize_data,
     get_billing_project_id,
     get_dataflow_params,
     get_dataset_info,
     get_dataset_name_on_gypscie,
     get_dataset_processor_info,
     get_output_dataset_ids_on_gypscie,
-    path_to_dfr,
+    # path_to_dfr,
     query_data_from_gcp,
     register_dataset_on_gypscie,
     task_wait_run,
 )
-from pipelines.tasks import (  # pylint: disable=E0611, E0401
-    get_storage_destination,
-    task_create_partitions,
-    upload_files_to_storage,
-)
+# from pipelines.tasks import (  # pylint: disable=E0611, E0401
+#     get_storage_destination,
+#     task_create_partitions,
+#     upload_files_to_storage,
+# )
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
@@ -145,40 +145,40 @@ with Flow(
     wait_run = task_wait_run(api, dataset_processor_task_id, flow_type="processor")
     dataset_name = get_dataset_name_on_gypscie(api, wait_run["dataset_id"])
     dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
-    dfr_ = path_to_dfr(path=dataset_path)
-    # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
-    dfr = add_columns_on_dfr(dfr_, model_version, update_time=True)
+    # dfr_ = path_to_dfr(path=dataset_path)
+    # # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
+    # dfr = add_columns_on_dfr(dfr_, model_version, update_time=True)
 
-    # Save pre-treated data on local file with partitions
-    now_datetime = get_now_datetime()
-    prediction_data_path = task_create_partitions(
-        dfr,
-        partition_date_column=dataset_info["partition_date_column"],
-        savepath="model_prediction",
-        suffix=now_datetime,
-    )
-    ################################
-    #  Save preprocessing on GCP   #
-    ################################
+    # # Save pre-treated data on local file with partitions
+    # now_datetime = get_now_datetime()
+    # prediction_data_path = task_create_partitions(
+    #     dfr,
+    #     partition_date_column=dataset_info["partition_date_column"],
+    #     savepath="model_prediction",
+    #     suffix=now_datetime,
+    # )
+    # ################################
+    # #  Save preprocessing on GCP   #
+    # ################################
 
-    # Upload data to BigQuery
-    create_table = create_table_and_upload_to_gcs(
-        data_path=prediction_data_path,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        dump_mode=dump_mode,
-        biglake_table=False,
-    )
+    # # Upload data to BigQuery
+    # create_table = create_table_and_upload_to_gcs(
+    #     data_path=prediction_data_path,
+    #     dataset_id=dataset_id,
+    #     table_id=table_id,
+    #     dump_mode=dump_mode,
+    #     biglake_table=False,
+    # )
 
-    # Trigger DBT flow run
-    with case(materialize_after_dump, True):
-        run_dbt = task_run_dbt_model_task(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            # mode=materialization_mode,
-            # materialize_to_datario=materialize_to_datario,
-        )
-        run_dbt.set_upstream(create_table)
+    # # Trigger DBT flow run
+    # with case(materialize_after_dump, True):
+    #     run_dbt = task_run_dbt_model_task(
+    #         dataset_id=dataset_id,
+    #         table_id=table_id,
+    #         # mode=materialization_mode,
+    #         # materialize_to_datario=materialize_to_datario,
+    #     )
+    #     run_dbt.set_upstream(create_table)
 
 ##############################
 #  Flow run parameters       #
@@ -327,58 +327,58 @@ with Flow(
     dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
 
     prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
-    desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
+    # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     now_datetime = get_now_datetime()
-    geolocalized_prediction_datasets = geolocalize_data(
-        desnormalized_prediction_datasets, now_datetime
-    )
-    images_path_wb = create_image(geolocalized_prediction_datasets)
-    dfr = add_columns_on_dfr(geolocalized_prediction_datasets, model_version)
+    # geolocalized_prediction_datasets = geolocalize_data(
+    #     desnormalized_prediction_datasets, now_datetime
+    # )
+    # images_path_wb = create_image(geolocalized_prediction_datasets)
+    # dfr = add_columns_on_dfr(geolocalized_prediction_datasets, model_version)
 
-    ##############################
-    #  Save image on GCP         #
-    ##############################
-    destination_folder_wb = get_storage_destination(
-        path="cor-clima-imagens/predicao_precipitacao/rionowcast_1/without_background"
-    )
-    upload_files_to_storage(
-        project="datario",
-        bucket_name="datario-public",
-        destination_folder=destination_folder_wb,
-        source_file_names=images_path_wb,
-    )
+    # ##############################
+    # #  Save image on GCP         #
+    # ##############################
+    # destination_folder_wb = get_storage_destination(
+    #     path="cor-clima-imagens/predicao_precipitacao/rionowcast_1/without_background"
+    # )
+    # upload_files_to_storage(
+    #     project="datario",
+    #     bucket_name="datario-public",
+    #     destination_folder=destination_folder_wb,
+    #     source_file_names=images_path_wb,
+    # )
 
-    ##############################
-    #  Save predictions on GCP   #
-    ##############################
+    # ##############################
+    # #  Save predictions on GCP   #
+    # ##############################
 
-    # Save prediction on file
-    prediction_data_path = task_create_partitions(
-        dfr,
-        partition_date_column="data_predicao",  # TODO: change column name
-        # partition_columns=["ano_particao", "mes_particao", "data_particao"],
-        savepath="model_prediction",
-        suffix=now_datetime,
-    )
+    # # Save prediction on file
+    # prediction_data_path = task_create_partitions(
+    #     dfr,
+    #     partition_date_column="data_predicao",  # TODO: change column name
+    #     # partition_columns=["ano_particao", "mes_particao", "data_particao"],
+    #     savepath="model_prediction",
+    #     suffix=now_datetime,
+    # )
 
-    # Upload data to BigQuery
-    create_table = create_table_and_upload_to_gcs(
-        data_path=prediction_data_path,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        dump_mode=dump_mode,
-        biglake_table=False,
-    )
+    # # Upload data to BigQuery
+    # create_table = create_table_and_upload_to_gcs(
+    #     data_path=prediction_data_path,
+    #     dataset_id=dataset_id,
+    #     table_id=table_id,
+    #     dump_mode=dump_mode,
+    #     biglake_table=False,
+    # )
 
-    # Trigger DBT flow run
-    with case(materialize_after_dump, True):
-        run_dbt = task_run_dbt_model_task(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            # mode=materialization_mode,
-            # materialize_to_datario=materialize_to_datario,
-        )
-        run_dbt.set_upstream(create_table)
+    # # Trigger DBT flow run
+    # with case(materialize_after_dump, True):
+    #     run_dbt = task_run_dbt_model_task(
+    #         dataset_id=dataset_id,
+    #         table_id=table_id,
+    #         # mode=materialization_mode,
+    #         # materialize_to_datario=materialize_to_datario,
+    #     )
+    #     run_dbt.set_upstream(create_table)
 
 
 ##############################
