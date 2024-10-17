@@ -26,7 +26,7 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; get_billing_project_id,; add_columns_on_dfr, create_image, desnormalize_data, geolocalize_data, path_to_dfr,
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     access_api,
     download_datasets_from_gypscie,
     execute_dataset_processor,
@@ -35,11 +35,13 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     get_dataset_info,
     get_dataset_name_on_gypscie,
     get_dataset_processor_info,
-    get_output_dataset_ids_on_gypscie,
+    # get_output_dataset_ids_on_gypscie,
     query_data_from_gcp,
     register_dataset_on_gypscie,
     task_wait_run,
 )
+# get_billing_project_id, add_columns_on_dfr, create_image, desnormalize_data,
+# geolocalize_data, path_to_dfr,
 
 # from pipelines.tasks import (  # pylint: disable=E0611, E0401
 #     get_storage_destination,
@@ -314,16 +316,16 @@ with Flow(
     )
 
     # Send dataset ids to gypscie to get predictions
-    task_id = execute_prediction_on_gypscie(
+    output_datasets_id = execute_prediction_on_gypscie(
         api,
         model_params,
     )
-    prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
-    wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
-    dataset_name = get_dataset_name_on_gypscie(api, wait_run["dataset_id"])  # new
+    # prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
+    # wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
+    dataset_name = get_dataset_name_on_gypscie(api, output_datasets_id)  # new
     dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
 
-    prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
+    # prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
     # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     now_datetime = get_now_datetime()
     # geolocalized_prediction_datasets = geolocalize_data(

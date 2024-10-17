@@ -43,6 +43,7 @@ def access_api():
 
     username = get_secret(infisical_username, path="/gypscie_dexl")[infisical_username]
     password = get_secret(infisical_password, path="/gypscie_dexl")[infisical_password]
+    log(f"Username {username}, password {password} ")
     api = GypscieApi(username=username, password=password)
 
     return api
@@ -304,10 +305,12 @@ def execute_prediction_on_gypscie(
     api,
     model_params: dict,
     # hours_to_predict,
-) -> str:
+) -> List:
     """
     Requisição de execução de um processo de Predição
-    Return task_id
+    Return
+    {'state': 'STARTED'}
+    {'result': {'output_datasets': [236]}, 'state': 'SUCCESS'}
     """
     log("Starting prediction")
     task_response = api.post(
@@ -327,10 +330,8 @@ def execute_prediction_on_gypscie(
         task_state = Failed(failed_message)
         raise ENDRUN(state=task_state)
 
-    print(f"Prediction ended. Response: {response}, {response.json()}")
-    # TODO: retorna a predição? o id da do dataset?
-
-    return response.json().get("task_id")  # response.json().get('task_id')
+    print(f"Prediction ended. Response: {response}")
+    return response.get("output_datasets")
 
 
 @task
@@ -428,6 +429,7 @@ def get_dataset_name_on_gypscie(
     """
     Get datasets name
     """
+    dataset_id = dataset_id[0]
     try:
         response = api.get(path="datasets/" + dataset_id)
         response = response.json()
