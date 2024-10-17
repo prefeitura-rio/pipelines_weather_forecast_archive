@@ -21,7 +21,7 @@ from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611,
     get_redis_client,
 )
 
-from pipelines.utils.utils import log
+from prefeitura_rio.pipelines_utils.logging import log
 
 ###############
 #
