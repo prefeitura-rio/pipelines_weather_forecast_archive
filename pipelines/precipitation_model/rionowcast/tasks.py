@@ -41,8 +41,8 @@ def access_api():
     # username = get_secret(secret_name="USERNAME", path="/gypscie", environment="prod")
     # password = get_secret(secret_name="PASSWORD", path="/gypscie", environment="prod")
 
-    username = get_secret(infisical_username, path="/gypscie")[infisical_username]
-    password = get_secret(infisical_password, path="/gypscie")[infisical_password]
+    username = get_secret(infisical_username, path="/gypscie_dexl")[infisical_username]
+    password = get_secret(infisical_password, path="/gypscie_dexl")[infisical_password]
     api = GypscieApi(username=username, password=password)
 
     return api
