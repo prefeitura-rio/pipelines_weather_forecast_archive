@@ -1,3 +1,15 @@
+# Folders that Git should ignore
+*.ipynb_checkpoints/
+pipelines/precipitation_model/impa/models/data/
+pipelines/precipitation_model/impa/models/docs/
+pipelines/precipitation_model/impa/models/eval/
+pipelines/precipitation_model/impa/models/models/
+pipelines/precipitation_model/impa/models/personal/
+pipelines/precipitation_model/impa/models/radar_cal/
+pipelines/precipitation_model/impa/models/lightning_logs/
+**/test_flow/** */
+pipelines/precipitation_model/rionowcast/gypscie
+
 # user defined
 .replit
 replit.nix

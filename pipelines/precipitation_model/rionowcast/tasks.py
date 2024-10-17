@@ -344,6 +344,7 @@ def get_dataflow_params(  # pylint: disable=too-many-arguments
     rain_gauge_data_id,
     grid_data_id,
     model_data_id,
+    output_function_id,
 ) -> List:
     """
     Return parameters for the model
@@ -383,6 +384,7 @@ def get_dataflow_params(  # pylint: disable=too-many-arguments
                 "function_id": pre_processing_function_id,
             },
             {"function_id": model_function_id, "params": {"model_path": model_data_id}},
+            {"function_id": output_function_id, "params": {"output_path": "prediction.npy"}},
         ],
         "project_id": project_id,
     }

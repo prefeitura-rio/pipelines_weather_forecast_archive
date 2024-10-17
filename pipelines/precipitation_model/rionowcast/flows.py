@@ -224,33 +224,33 @@ with Flow(
     project_id = Parameter("project_id", default=1, required=False)
 
     # Gypscie functions and workflow parameters
-    workflow_id = Parameter("workflow_id", default=36, required=False)  # mudar
+    workflow_id = Parameter("workflow_id", default=43, required=False)  # mudar.
+    load_data_function_id = Parameter("load_data_function_id", default=59, required=False)  # mudar
     pre_processing_function_id = Parameter(
-        "pre_processing_function_id", default=43, required=False
-    )  # mudar
-    load_data_function_id = Parameter("load_data_function_id", default=42, required=False)  # mudar
-    # post_processing_function_id = Parameter(
-    #     "post_processing_function_id", default=18, required=False
-    # )  # mudar
+        "pre_processing_function_id", default=60, required=False
+    )  # mudar.
     model_function_id = Parameter(
         "model_function_id",
-        default=2,
+        default=61,
         required=False,
         description="Id of the function of the model",
-    )  # mudar
+    )  # mudar.
 
     # Gypscie dataset parameters
     model_data_id = Parameter(
         "model_data_id",
-        default=24,
+        default=191,
         required=False,
         description="Id of the model saved as a dataset",
-    )  # mudar
+    )  # mudar.
+    output_function_id = Parameter(
+        "output_function_id", default=62, required=False
+    )  # mudar.
     # radar_data_id = Parameter("radar_data_id", default=25, required=False)
     # rain_gauge_data_id = Parameter("rain_gauge_data_id", default=22, required=False)
     grid_data_id = Parameter(
-        "grid_data_id", default=23, required=False, description="Grid ID saved as a dataset"
-    )  # mudar
+        "grid_data_id", default=177, required=False  #, description="Grid ID saved as a dataset"
+    )  # mudar.
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
@@ -304,8 +304,8 @@ with Flow(
     # pluviometer_alertario_registered = register_dataset_on_gypscie(api, pluviometer_alertario_path)  # noqa E501
     # radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path)
 
-    pluviometer_alertario_registered = {"id": 22}
-    radar_mendanha_registered = {"id": 25}
+    pluviometer_alertario_registered = {"id": 231}
+    radar_mendanha_registered = {"id": 230}
 
     model_params = get_dataflow_params(
         workflow_id=workflow_id,
@@ -318,6 +318,7 @@ with Flow(
         rain_gauge_data_id=radar_mendanha_registered["id"],
         grid_data_id=grid_data_id,
         model_data_id=model_data_id,
+        output_function_id=output_function_id,
     )
 
     # Send dataset ids to gypscie to get predictions
