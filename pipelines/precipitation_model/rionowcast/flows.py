@@ -17,6 +17,7 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
     get_now_datetime,
 )
+
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;
 #     create_table_and_upload_to_gcs,
 #     task_run_dbt_model_task,
@@ -25,12 +26,11 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; get_billing_project_id,; add_columns_on_dfr, create_image, desnormalize_data, geolocalize_data, path_to_dfr,
     access_api,
     download_datasets_from_gypscie,
     execute_dataset_processor,
     execute_prediction_on_gypscie,
-    # get_billing_project_id,
     get_dataflow_params,
     get_dataset_info,
     get_dataset_name_on_gypscie,
@@ -39,7 +39,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     query_data_from_gcp,
     register_dataset_on_gypscie,
     task_wait_run,
-)  # add_columns_on_dfr, create_image, desnormalize_data, geolocalize_data, path_to_dfr,
+)
 
 # from pipelines.tasks import (  # pylint: disable=E0611, E0401
 #     get_storage_destination,
