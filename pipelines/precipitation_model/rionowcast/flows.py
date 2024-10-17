@@ -229,7 +229,7 @@ with Flow(
         "model_function_id",
         default=61,
         required=False,
-        description="Id of the function of the model",
+        # description="Id of the function of the model",
     )  # mudar.
 
     # Gypscie dataset parameters
@@ -237,7 +237,7 @@ with Flow(
         "model_data_id",
         default=191,
         required=False,
-        description="Id of the model saved as a dataset",
+        # description="Id of the model saved as a dataset",
     )  # mudar.
     output_function_id = Parameter("output_function_id", default=62, required=False)  # mudar.
     # radar_data_id = Parameter("radar_data_id", default=25, required=False)
