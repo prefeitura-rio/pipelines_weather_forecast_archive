@@ -143,7 +143,7 @@ with Flow(
         parameters=processor_parameters,
     )
     wait_run = task_wait_run(api, dataset_processor_task_id, flow_type="processor")
-    dataset_name = get_dataset_name_on_gypscie(wait_run["dataset_id"])
+    dataset_name = get_dataset_name_on_gypscie(api, wait_run["dataset_id"])
     dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
     dfr_ = path_to_dfr(dataset_path)
     # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
@@ -295,7 +295,8 @@ with Flow(
     # )
 
     # # Register these datasets on gypscie
-    # pluviometer_alertario_registered = register_dataset_on_gypscie(api, pluviometer_alertario_path)  # noqa E501, C0301
+    # pluviometer_alertario_registered = register_dataset_on_gypscie(
+    # api, pluviometer_alertario_path)  # noqa E501, C0301
     # radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path)
 
     pluviometer_alertario_registered = {"id": 231}
@@ -321,6 +322,10 @@ with Flow(
         model_params,
     )
     prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
+    wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
+    dataset_name = get_dataset_name_on_gypscie(api, wait_run["dataset_id"])  # new
+    dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
+
     prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
     desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     now_datetime = get_now_datetime()
