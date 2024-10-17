@@ -13,7 +13,7 @@ import pandas as pd
 
 # import basedosdados as bd
 # from basedosdados.download.base import google_client
-from basedosdados.upload.base import Base
+from basedosdados import Base
 from google.cloud import bigquery
 from prefect import task
 from prefect.engine.signals import ENDRUN
