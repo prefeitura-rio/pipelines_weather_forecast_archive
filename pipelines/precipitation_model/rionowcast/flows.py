@@ -26,7 +26,7 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; get_output_dataset_ids_on_gypscie,
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     access_api,
     download_datasets_from_gypscie,
     execute_dataset_processor,
@@ -323,7 +323,7 @@ with Flow(
     # prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
     # wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
     dataset_name = get_dataset_name_on_gypscie(api, output_datasets_id)  # new
-    dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
+    dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name])
 
     # prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
     # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)

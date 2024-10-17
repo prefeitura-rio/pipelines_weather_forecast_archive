@@ -432,7 +432,7 @@ def get_dataset_name_on_gypscie(
     log(f"dataset_id input: {dataset_id}")
     dataset_id = dataset_id[0]
     try:
-        response = api.get(path="datasets/" + dataset_id)
+        response = api.get(path="datasets/" + str(dataset_id))
         response = response.json()
     except HTTPError as err:
         if err.response.status_code == 404:
