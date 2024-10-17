@@ -10,7 +10,6 @@ from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
@@ -22,10 +21,10 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401; update_schedule,
+from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; calculate_start_and_end_date,; get_prediction_on_gypscie,
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     access_api,
     add_columns_on_dfr,
     create_image,
@@ -115,7 +114,7 @@ with Flow(
                 billing_project_id="rj-cor",
                 start_date=start_date,
                 end_date=end_date,
-                format="parquet",
+                save_format="parquet",
             )
 
         with case(station_type, "radar"):
@@ -284,7 +283,7 @@ with Flow(
     #     billing_project_id="rj-cor",
     #     start_date=start_date,
     #     end_date=end_date,
-    #     format="parquet",
+    #     save_format="parquet",
     # )
     # radar_mendanha_path = query_data_from_gcp(
     #     radar_dataset_info["dataset_id"],
@@ -296,7 +295,7 @@ with Flow(
     # )
 
     # # Register these datasets on gypscie
-    # pluviometer_alertario_registered = register_dataset_on_gypscie(api, pluviometer_alertario_path)  # noqa E501
+    # pluviometer_alertario_registered = register_dataset_on_gypscie(api, pluviometer_alertario_path)  # noqa E501, C0301
     # radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path)
 
     pluviometer_alertario_registered = {"id": 231}
