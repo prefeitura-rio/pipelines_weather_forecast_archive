@@ -10,7 +10,8 @@ from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.state_handlers import (  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
@@ -38,6 +39,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     get_billing_project_id,
     get_dataflow_params,
     get_dataset_info,
+    get_dataset_name_on_gypscie,
     get_dataset_processor_info,
     get_output_dataset_ids_on_gypscie,
     # get_prediction_on_gypscie,
@@ -88,7 +90,7 @@ with Flow(
     dump_mode = Parameter("dump_mode", default=False, required=False)
     dataset_id = Parameter("dataset_id", default="clima_previsao_chuva", required=False)
     table_id = Parameter(
-        "table_id", default="preprocessamento_pluviometro_alertario", required=False
+        "table_id", default="modelo_pluviometro_alertario_radar_mendanha_rionowcast", required=False
     )
 
     # Dataset parameters
@@ -146,8 +148,9 @@ with Flow(
         parameters=processor_parameters,
     )
     wait_run = task_wait_run(api, dataset_processor_task_id, flow_type="processor")
+    dataset_name = get_dataset_name_on_gypscie(wait_run["dataset_id"])
     dataset_path = download_datasets_from_gypscie(
-        api, dataset_names=[dataset_response["id"]], wait=wait_run
+        api, dataset_names=[dataset_name], wait=wait_run
     )
     dfr_ = path_to_dfr(dataset_path)
     # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)

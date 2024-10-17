@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable= C0207
 """
 Tasks
 """
@@ -405,15 +406,36 @@ def get_output_dataset_ids_on_gypscie(
         if err.response.status_code == 404:
             print(f"Task {task_id} not found")
             return []
+    log(f"status_workflow_run response {response}")
 
     return response.get("output_datasets")
+
+
+@task()
+def get_dataset_name_on_gypscie(
+    api,
+    dataset_id,
+) -> List:
+    """
+    Get datasets name
+    """
+    try:
+        response = api.get(path="datasets/" + dataset_id)
+        response = response.json()
+    except HTTPError as err:
+        if err.response.status_code == 404:
+            print(f"Dataset_id {dataset_id} not found")
+            return []
+    log(f"Get dataset name response {response}")
+
+    return response.get("name")
 
 
 @task()
 def download_datasets_from_gypscie(
     api,
     dataset_names: List,
-    wait=None,
+    wait=None,  # pylint: disable=unused-argument
 ) -> List:
     """
     Get output files with predictions
@@ -454,6 +476,7 @@ def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.D
     Expected columns: latitude, longitude, janela_predicao,
     valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
     """
+    now_datetime = now_datetime+1
     return prediction_datasets
 
 
@@ -526,7 +549,7 @@ def create_image(data) -> List:
         return save_image_path
     """
     save_image_path = "image.png"
-
+    data = data+1
     return save_image_path
 
 
