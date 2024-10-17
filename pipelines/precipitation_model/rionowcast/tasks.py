@@ -6,13 +6,13 @@ Tasks
 import datetime
 import os
 from pathlib import Path
-from time import sleep
+# from time import sleep
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-from basedosdados.upload.base import Base
-from google.cloud import bigquery
+# from basedosdados.upload.base import Base
+# from google.cloud import bigquery
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
@@ -46,32 +46,36 @@ def access_api():
     return api
 
 
-@task()
-def get_billing_project_id(
-    bd_project_mode: str = "prod",
-    billing_project_id: str = None,
-) -> str:
-    """
-    Get billing project id
-    """
-    if not billing_project_id:
-        log("Billing project ID was not provided, trying to get it from environment variable")
-    try:
-        bd_base = Base()
-        billing_project_id = bd_base.config["gcloud-projects"][bd_project_mode]["name"]
-        log(f"Billing project ID was inferred from environment variables: {billing_project_id}")
-    except KeyError:
-        pass
-    if not billing_project_id:
-        raise ValueError(
-            "billing_project_id must be either provided or inferred from environment variables"
-        )
-    log(f"Billing project ID: {billing_project_id}")
-    return billing_project_id
+# @task()
+# def get_billing_project_id(
+#     bd_project_mode: str = "prod",
+#     billing_project_id: str = None,
+# ) -> str:
+#     """
+#     Get billing project id.
+#     OBS: not workin in this basedosdados version
+#     """
+#     if not billing_project_id:
+#         log("Billing project ID was not provided, trying to get it from environment variable")
+#     try:
+#         bd_base = Base()
+#         billing_project_id = bd_base.config["gcloud-projects"][bd_project_mode]["name"]
+#         log(f"Billing project ID was inferred from environment variables: {billing_project_id}")
+#     except KeyError:
+#         pass
+#     if not billing_project_id:
+#         raise ValueError(
+#             "billing_project_id must be either provided or inferred from environment variables"
+#         )
+#     log(f"Billing project ID: {billing_project_id}")
+#     return billing_project_id
 
 
 def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataFrame:
     """ADD"""
+    dfr = pd.DataFrame()  # TODO: remove
+    query = query + "1"  # TODO: remove
+    billing_project_id = billing_project_id + "1"  # TODO: remove
     # pylint: disable=E1124, protected-access
     # client = google_client(billing_project_id, from_file=True, reauth=False)
     # job_config = bigquery.QueryJobConfig()
@@ -81,24 +85,28 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
     # log("Querying data from BigQuery")
     # job = client["bigquery"].query(query, job_config=job_config)
     # https://github.com/prefeitura-rio/pipelines_rj_iplanrio/blob/ecd21c727b6f99346ef84575608e560e5825dd38/pipelines/painel_obras/dump_data/tasks.py#L39
-    bq_client = bigquery.Client(
-        credentials=Base(bucket_name="rj-cor")._load_credentials(mode="prod"),
-        project=billing_project_id,
-    )
-    job = bq_client.query(query)
-    while not job.done():
-        sleep(1)
+
+    # TODO: check how this will work on new basedosdados version
+    # last version. CAn not import Base from this basedosdadosversion
+    # bq_client = bigquery.Client(
+    #     credentials=Base(bucket_name="rj-cor")._load_credentials(mode="prod"),
+    #     project=billing_project_id,
+    # )
+    # job = bq_client.query(query)
+    # while not job.done():
+    #     sleep(1)
+    # log("Getting result from query")
+    # results = job.result()
+    # log("Converting result to pandas dataframe")
+    # dfr = results.to_dataframe()
+    # log("End download data from bigquery")
+    # end last version
 
     # Get data
     # log("Querying data from BigQuery")
     # job = client["bigquery"].query(query)
     # while not job.done():
     #     sleep(1)
-    log("Getting result from query")
-    results = job.result()
-    log("Converting result to pandas dataframe")
-    dfr = results.to_dataframe()
-    log("End download data from bigquery")
     return dfr
 
 
