@@ -451,8 +451,11 @@ def download_datasets_from_gypscie(
     """
     Get output files with predictions
     """
+    log(f"dataset_names input: {dataset_names}")
     for file_name in dataset_names:
-        response = api.get(path=f"download/datasets/{file_name}.zip")
+        log(f"Downloading dataset {file_name} from Gypscie")
+        response = api.get(f"download/datasets/{file_name}.zip")
+        log(f"Download response: {response}")
         if response.status_code == 200:
             log(f"Dataset {file_name} downloaded")
         else:
