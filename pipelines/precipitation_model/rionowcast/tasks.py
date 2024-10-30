@@ -455,7 +455,7 @@ def download_datasets_from_gypscie(
     """
     Get output files with predictions
     """
-    log(f"\n\nDataset names to be downloads from Gypscie: {dataset_names}")
+    log(f"\n\nDataset names to be downloaded from Gypscie: {dataset_names}")
     for dataset_name in dataset_names:
         log(f"Downloading dataset {dataset_name} from Gypscie")
         response = api.get(f"download/datasets/{dataset_name}.zip")
