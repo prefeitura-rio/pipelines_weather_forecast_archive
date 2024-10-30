@@ -471,7 +471,7 @@ def download_datasets_from_gypscie(
 
 
 @task
-def unzip_files(zip_files: List[str], destination_folder: str ="./") -> List[str]:
+def unzip_files(zip_files: List[str], destination_folder: str = "./") -> List[str]:
     """
     Unzip files to destination folder
     """
