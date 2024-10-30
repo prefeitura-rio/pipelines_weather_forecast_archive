@@ -6,6 +6,7 @@ Utils file
 from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
+import simplejson
 
 import basedosdados as bd
 import requests
@@ -87,7 +88,10 @@ class GypscieApi:
         self._refresh_token_if_needed()
         response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
         response.raise_for_status()
-        return response.json()
+        try:
+            return response.json()
+        except simplejson.JSONDecodeError:
+            return response
 
     def put(self, path, json=None):
         """
