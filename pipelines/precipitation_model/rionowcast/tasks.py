@@ -6,6 +6,7 @@ Tasks
 import datetime
 import os
 from pathlib import Path
+import zipfile
 
 # from time import sleep
 from typing import Dict, List
@@ -183,7 +184,7 @@ def execute_dataset_processor(
     dataset_id: list,  # como pegar os vários datasets
     environment_id: int,
     project_id: int,
-    parameters: dict
+    parameters: dict,
     # adicionar campos do dataset_processor
 ) -> List:
     """
@@ -424,22 +425,25 @@ def get_output_dataset_ids_on_gypscie(
 @task()
 def get_dataset_name_on_gypscie(
     api,
-    dataset_id,
+    dataset_ids: list,
 ) -> List:
     """
-    Get datasets name
+    Get datasets name using their dataset ids
     """
-    log(f"dataset_id input: {dataset_id}")
-    dataset_id = dataset_id[0]
-    try:
-        response = api.get(path="datasets/" + str(dataset_id))
-    except HTTPError as err:
-        if err.response.status_code == 404:
-            print(f"Dataset_id {dataset_id} not found")
-            return []
-    log(f"Get dataset name response {response}")
-
-    return response.get("name")
+    dataset_names = []
+    log(f"All dataset_ids to get names: {dataset_ids}")
+    for dataset_id in dataset_ids:
+        log(f"Getting name for dataset id: {dataset_id}")
+        try:
+            response = api.get(path="datasets/" + str(dataset_id))
+        except HTTPError as err:
+            if err.response.status_code == 404:
+                print(f"Dataset_id {dataset_id} not found")
+                return []
+        log(f"Get dataset name response {response}")
+        dataset_names.append(response.get("name"))
+    log(f"All dataset names {dataset_names}")
+    return dataset_names
 
 
 @task()
@@ -451,17 +455,55 @@ def download_datasets_from_gypscie(
     """
     Get output files with predictions
     """
-    log(f"dataset_names input: {dataset_names}")
-    for file_name in dataset_names:
-        log(f"Downloading dataset {file_name} from Gypscie")
-        response = api.get(f"download/datasets/{file_name}.zip")
-        log(f"Download response: {response}")
+    log(f"\n\nDataset names to be downloads from Gypscie: {dataset_names}")
+    for dataset_name in dataset_names:
+        log(f"Downloading dataset {dataset_name} from Gypscie")
+        response = api.get(f"download/datasets/{dataset_name}.zip")
+        log(f"Download {dataset_name}'s response: {response}")
         if response.status_code == 200:
-            log(f"Dataset {file_name} downloaded")
+            dataset = response.content
+            with open(f"{dataset_name}.zip", "wb") as file:
+                file.write(dataset)
+            log(f"Dataset {dataset_name} downloaded")
         else:
-            log(f"Dataset {file_name} not found on Gypscie")
-    # TODO: verificar se o arquivo é .zip mesmo
-    return [dataset_name + ".zip" for dataset_name in dataset_names]
+            log(f"Dataset {dataset_name} not found on Gypscie")
+    return dataset_names
+
+
+@task
+def unzip_files(zip_files: List[str], destination_folder: str) -> List[str]:
+    """
+    Unzip files to destination folder
+    """
+    zip_files = [
+        zip_file if zip_file.endswith(".zip") else zip_file + ".zip" for zip_file in zip_files
+    ]
+    os.makedirs(destination_folder, exist_ok=True)
+
+    unziped_files = []
+    for zip_file in zip_files:
+        with zipfile.ZipFile(zip_file, "r") as zip_ref:
+            zip_ref.extractall(destination_folder)
+            unziped_files.extend(
+                [
+                    os.path.join(destination_folder, nome_arquivo)
+                    for nome_arquivo in zip_ref.namelist()
+                ]
+            )
+
+    return unziped_files
+
+
+@task
+def read_numpy_files(file_paths: List[str]) -> List[np.ndarray]:
+    """
+    Read numpy arrays and return a list with of them
+    """
+    arrays = []
+    for file_path in file_paths:
+        array = np.load(file_path)
+        arrays.append(array)
+    return arrays
 
 
 @task
@@ -592,9 +634,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "meteorologia_alertario"
-            dataset_info[
-                "destination_table_id"
-            ] = "preprocessamento_estacao_meteorologica_alertario"
+            dataset_info["destination_table_id"] = (
+                "preprocessamento_estacao_meteorologica_alertario"
+            )
         elif source == "inmet":
             dataset_info["table_id"] = "meteorologia_inmet"
             dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
@@ -617,7 +659,6 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
 
 
 def path_to_dfr(path: str) -> pd.DataFrame:
-
     """
     Reads a csv or parquet file from the given path and returns a dataframe
     """

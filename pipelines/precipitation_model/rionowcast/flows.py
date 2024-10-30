@@ -316,14 +316,14 @@ with Flow(
     )
 
     # Send dataset ids to gypscie to get predictions
-    output_datasets_id = execute_prediction_on_gypscie(
+    output_dataset_ids = execute_prediction_on_gypscie(
         api,
         model_params,
     )
     # prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
     # wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
-    dataset_name = get_dataset_name_on_gypscie(api, output_datasets_id)  # new
-    dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name])
+    dataset_names = get_dataset_name_on_gypscie(api, output_dataset_ids)  # new
+    dataset_paths = download_datasets_from_gypscie(api, dataset_names=[dataset_names])
 
     # prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
     # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
