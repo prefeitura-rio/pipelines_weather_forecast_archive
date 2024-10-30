@@ -6,10 +6,10 @@ Utils file
 from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
-import simplejson
 
 import basedosdados as bd
 import requests
+import simplejson
 from prefeitura_rio.pipelines_utils.logging import log
 
 
