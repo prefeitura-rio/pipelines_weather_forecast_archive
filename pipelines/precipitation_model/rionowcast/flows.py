@@ -325,9 +325,9 @@ with Flow(
     # prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
     # wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
     dataset_names = get_dataset_name_on_gypscie(api, output_dataset_ids)  # new
-    dataset_paths = download_datasets_from_gypscie(api, dataset_names=dataset_names)
-    file_paths = unzip_files(dataset_paths)
-    prediction_datasets = read_numpy_files(file_paths)
+    ziped_dataset_paths = download_datasets_from_gypscie(api, dataset_names=dataset_names)
+    dataset_paths = unzip_files(ziped_dataset_paths)
+    prediction_datasets = read_numpy_files(dataset_paths)
 
     # prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
     # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)

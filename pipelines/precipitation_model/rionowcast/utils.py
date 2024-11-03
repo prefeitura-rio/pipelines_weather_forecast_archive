@@ -7,10 +7,13 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
 
-import basedosdados as bd
+import basedosdados as bd  # pylint: disable=E0611, E0401
 import requests
-import simplejson
-from prefeitura_rio.pipelines_utils.logging import log
+import simplejson  # pylint: disable=E0611, E0401
+from prefect.engine.signals import ENDRUN  # pylint: disable=E0611, E0401
+from prefect.engine.state import Failed  # pylint: disable=E0611, E0401
+
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 
 class GypscieApi:
@@ -28,7 +31,7 @@ class GypscieApi:
         if username is None or password is None:
             raise ValueError("Must be set refresh token or username with password")
 
-        self._base_url = base_url or "https://twinscie.dexl.lncc.br/api/"
+        self._base_url = base_url or "https://gypscie.dados.rio/api/"
         self._username = username
         self._password = password
         self._token_callback = token_callback
@@ -145,8 +148,10 @@ def wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
     if "task_id" in task_response.keys():
         _id = task_response.get("task_id")
     else:
-        log(f"Error processing: task_id not found on response:{task_response}")
-        # TODO: stop flow here
+        failed_message = f"Error processing: task_id not found on response:{task_response}"
+        log(failed_message)
+        task_state = Failed(failed_message)
+        raise ENDRUN(state=task_state)
 
     # Request to get the execution status
     path_flow_type = "status_workflow_run" if flow_type == "dataflow" else "status_processor_run"

@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 from typing import Callable, Dict, Tuple  # , List
 
 import requests
-from prefeitura_rio.pipelines_utils.logging import log
+import simplejson  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
@@ -101,17 +102,20 @@ class Api:
         self._refresh_token_if_needed()
         response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
         response.raise_for_status()
-        return response.json()
+        try:
+            return response.json()
+        except simplejson.JSONDecodeError:
+            return response
 
-    def put(self, path, json_data=None):
+    def put(self, path, json=None):
         """
         put
         """
         self._refresh_token_if_needed()
-        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json)
         return response
 
-    def post(self, path, data: dict = None, json_data: dict = None, files: dict = None):
+    def post(self, path, data: dict = None, json: dict = None, files: dict = None):
         """
         post
         """
@@ -120,8 +124,8 @@ class Api:
             url=f"{self._base_url}{path}",
             headers=self._headers,
             data=data,
-            json=json_data,
+            json=json,
             files=files,
         )
-        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json)
         return response

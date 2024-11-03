@@ -8,25 +8,27 @@ import os
 import zipfile
 from pathlib import Path
 
-# from time import sleep
+from time import sleep
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 
-# from basedosdados.upload.base import Base
-# from google.cloud import bigquery
-from prefect import task
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
-from prefeitura_rio.pipelines_utils.infisical import get_secret
-from prefeitura_rio.pipelines_utils.logging import log
+from basedosdados import Base  # pylint: disable=E0611, E0401
+from google.cloud import bigquery  # pylint: disable=E0611, E0401
+from prefect import task  # pylint: disable=E0611, E0401
+from prefect.engine.signals import ENDRUN  # pylint: disable=E0611, E0401
+from prefect.engine.state import Failed  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import get_secret  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from requests.exceptions import HTTPError
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.utils import (  # pylint: disable=E0611, E0401
-    GypscieApi,
     wait_run,
+)
+from pipelines.utils.api import (  # pylint: disable=E0611, E0401
+    Api,
 )
 
 
@@ -36,16 +38,19 @@ def access_api():
     """# noqa E303
     Acess api and return it to be used in other requests
     """
+    infisical_path = constants.INFISICAL_PATH.value
+    infisical_url = constants.INFISICAL_URL.value
     infisical_username = constants.INFISICAL_USERNAME.value
     infisical_password = constants.INFISICAL_PASSWORD.value
 
     # username = get_secret(secret_name="USERNAME", path="/gypscie", environment="prod")
     # password = get_secret(secret_name="PASSWORD", path="/gypscie", environment="prod")
 
-    username = get_secret(infisical_username, path="/gypscie_dexl")[infisical_username]
-    password = get_secret(infisical_password, path="/gypscie_dexl")[infisical_password]
+    url = get_secret(infisical_url, path=infisical_path)[infisical_url]
+    username = get_secret(infisical_username, path=infisical_path)[infisical_username]
+    password = get_secret(infisical_password, path=infisical_path)[infisical_password]
     log(f"Username {username}, password {password} ")
-    api = GypscieApi(username=username, password=password)
+    api = Api(base_url=url, username=username, password=password)
 
     return api
 
@@ -77,34 +82,28 @@ def access_api():
 
 def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataFrame:
     """ADD"""
-    dfr = pd.DataFrame()  # TODO: remove
-    query = query + "1"  # TODO: remove
-    billing_project_id = billing_project_id + "1"  # TODO: remove
     # pylint: disable=E1124, protected-access
     # client = google_client(billing_project_id, from_file=True, reauth=False)
     # job_config = bigquery.QueryJobConfig()
     # # job_config.dry_run = True
 
     # # Get data
-    # log("Querying data from BigQuery")
+    log("Querying data from BigQuery")
     # job = client["bigquery"].query(query, job_config=job_config)
     # https://github.com/prefeitura-rio/pipelines_rj_iplanrio/blob/ecd21c727b6f99346ef84575608e560e5825dd38/pipelines/painel_obras/dump_data/tasks.py#L39
 
-    # TODO: check how this will work on new basedosdados version
-    # last version. CAn not import Base from this basedosdadosversion
-    # bq_client = bigquery.Client(
-    #     credentials=Base(bucket_name="rj-cor")._load_credentials(mode="prod"),
-    #     project=billing_project_id,
-    # )
-    # job = bq_client.query(query)
-    # while not job.done():
-    #     sleep(1)
-    # log("Getting result from query")
-    # results = job.result()
-    # log("Converting result to pandas dataframe")
-    # dfr = results.to_dataframe()
-    # log("End download data from bigquery")
-    # end last version
+    bq_client = bigquery.Client(
+        credentials=Base(bucket_name="rj-cor")._load_credentials(mode="prod"),
+        project=billing_project_id,
+    )
+    job = bq_client.query(query)
+    while not job.done():
+        sleep(1)
+    log("Getting result from query")
+    results = job.result()
+    log("Converting result to pandas dataframe")
+    dfr = results.to_dataframe()
+    log("End download data from bigquery")
 
     # Get data
     # log("Querying data from BigQuery")
@@ -471,7 +470,7 @@ def download_datasets_from_gypscie(
 
 
 @task
-def unzip_files(zip_files: List[str], destination_folder: str ="./") -> List[str]:
+def unzip_files(zip_files: List[str], destination_folder: str = "./") -> List[str]:
     """
     Unzip files to destination folder
     """
@@ -634,9 +633,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "meteorologia_alertario"
-            dataset_info[
-                "destination_table_id"
-            ] = "preprocessamento_estacao_meteorologica_alertario"
+            dataset_info["destination_table_id"] = (
+                "preprocessamento_estacao_meteorologica_alertario"
+            )
         elif source == "inmet":
             dataset_info["table_id"] = "meteorologia_inmet"
             dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
