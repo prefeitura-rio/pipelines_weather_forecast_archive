@@ -7,7 +7,7 @@ FROM python:${PYTHON_VERSION}
 # Install git, gcc, build-essential, and other dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 build-essential gcc && \
+    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 build-essential gcc gdal-bin libgdal-dev libgeos-dev proj-bin proj-data && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
