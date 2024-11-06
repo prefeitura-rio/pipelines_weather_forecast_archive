@@ -442,6 +442,14 @@ def download_blob(bucket_name, source_blob_name, destination_file_name) -> None:
     print(f"Blob {source_blob_name} downloaded to file path {destination_file_name}. successfully ")
 
 
+# flake8: noqa: E722
 def return_prefect_parameter(prefect_parameter):
     """Solve problems with prefect parameters returning then as string"""
-    return str(prefect_parameter)
+    text = str(prefect_parameter)
+    try:
+        text = "something" + text
+        text = text[9:]
+    except:
+        text = pd.DataFrame([text])
+        text = text.values[0][0]
+    return text
