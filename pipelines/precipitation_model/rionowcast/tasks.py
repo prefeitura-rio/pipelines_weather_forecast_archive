@@ -226,7 +226,7 @@ def create_image(data, filename) -> List:
         plt.axis("off")
 
         save_filename = f"{base_path}/{filename}_{i + 1}h.png"
-        plt.savefig(filename, bbox_inches="tight")
+        plt.savefig(save_filename, bbox_inches="tight")
         save_images_path.append(save_filename)
         log(f"Imagem {i + 1} salva como {save_filename}")
         plt.close()
