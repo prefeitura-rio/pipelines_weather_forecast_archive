@@ -5,54 +5,17 @@ Tasks
 """
 import datetime
 import os
-import zipfile
 from pathlib import Path
-
 from time import sleep
-from typing import Dict, List
+from typing import List
 
-import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from basedosdados import Base  # pylint: disable=E0611, E0401
 from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
-from prefect.engine.signals import ENDRUN  # pylint: disable=E0611, E0401
-from prefect.engine.state import Failed  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.infisical import get_secret  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
-from requests.exceptions import HTTPError
-
-from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.rionowcast.utils import (  # pylint: disable=E0611, E0401
-    wait_run,
-)
-from pipelines.utils.api import (  # pylint: disable=E0611, E0401
-    Api,
-)
-
-
-# noqa E302, E303
-@task()
-def access_api():
-    """# noqa E303
-    Acess api and return it to be used in other requests
-    """
-    infisical_path = constants.INFISICAL_PATH.value
-    infisical_url = constants.INFISICAL_URL.value
-    infisical_username = constants.INFISICAL_USERNAME.value
-    infisical_password = constants.INFISICAL_PASSWORD.value
-
-    # username = get_secret(secret_name="USERNAME", path="/gypscie", environment="prod")
-    # password = get_secret(secret_name="PASSWORD", path="/gypscie", environment="prod")
-
-    url = get_secret(infisical_url, path=infisical_path)[infisical_url]
-    username = get_secret(infisical_username, path=infisical_path)[infisical_username]
-    password = get_secret(infisical_password, path=infisical_path)[infisical_password]
-    log(f"Username {username}, password {password} ")
-    api = Api(base_url=url, username=username, password=password)
-
-    return api
 
 
 # @task()
@@ -113,137 +76,19 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
     return dfr
 
 
-@task()
-def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict:
-    """
-    Register dataset on gypscie and return its informations like id.
-    Obs: dataset name must be unique.
-    Return:
-    {
-        'domain':
-        {
-            'description': 'This project has the objective to create nowcasting models.',
-            'id': 1,
-            'name': 'rionowcast_precipitation'
-        },
-        'file_type': 'csv',
-        'id': 18,
-        'name': 'rain_gauge_to_model',
-        'register': '2024-07-02T19:20:32.507744',
-        'uri': 'http://gypscie.dados.rio/api/download/datasets/rain_gauge_to_model.zip'
-    }
-    """
-    log(f"\nStart registring dataset by sending {filepath} Data to Gypscie")
-
-    data = {
-        "domain_id": domain_id,
-        "name": str(filepath).split("/")[-1].split(".")[0]
-        + "_"
-        + datetime.datetime.now().strftime("%Y%m%d%H%M%S"),  # pylint: disable=use-maxsplit-arg
-    }
-    log(type(data), data)
-    files = {
-        "files": open(file=filepath, mode="rb"),  # pylint: disable=consider-using-with
-    }
-
-    response = api.post(path="datasets", data=data, files=files)
-
-    log(f"register_dataset_on_gypscie response: {response} and response.json(): {response.json()}")
-    return response.json()
-
-
-@task(nout=2)
-def get_dataset_processor_info(api, processor_name: str):
-    """
-    Geting dataset processor information
-    """
-    log(f"Getting dataset processor info for {processor_name}")
-    dataset_processors_response = api.get(
-        path="dataset_processors",
-    )
-
-    # log(dataset_processors_response)
-    dataset_processor_id = None
-    for response in dataset_processors_response:
-        if response.get("name") == processor_name:
-            dataset_processor_id = response["id"]
-            # log(response)
-            # log(response["id"])
-    return dataset_processors_response, dataset_processor_id
-
-    # if not dataset_processor_id:
-    #     log(f"{processor_name} not found. Try adding it.")
-
-
-@task()
-# pylint: disable=too-many-arguments
-def execute_dataset_processor(
-    api,
-    processor_id: int,
-    dataset_id: list,  # como pegar os vários datasets
-    environment_id: int,
-    project_id: int,
-    parameters: dict,
-    # adicionar campos do dataset_processor
-) -> List:
-    """
-    Requisição de execução de um DatasetProcessor
-    """
-    log("\nStarting executing dataset processing")
-
-    task_response = api.post(
-        path="processor_run",
-        json={
-            "dataset_id": dataset_id,
-            "environment_id": environment_id,
-            "parameters": parameters,
-            "processor_id": processor_id,
-            "project_id": project_id,
-        },
-    )
-    # task_response = {'task_id': '227e74bc-0057-4e63-a30f-8374604e442b'}
-
-    # response = wait_run(api, task_response.json())
-
-    # if response["state"] != "SUCCESS":
-    #     failed_message = "Error processing this dataset. Stop flow or restart this task"
-    #     log(failed_message)
-    #     task_state = Failed(failed_message)
-    #     raise ENDRUN(state=task_state)
-
-    # output_datasets = response["result"]["output_datasets"]  # returns a list with datasets
-    # log(f"\nFinish executing dataset processing, we have {len(output_datasets)} datasets")
-    # return output_datasets
-    return task_response.json(["task_id"])
-
-
-@task()
-def predict(api, model_id: int, dataset_id: int, project_id: int) -> dict:
-    """
-    Requisição de execução de um processo de Predição
-    """
-    print("Starting prediction")
-    response = api.post(
-        path="predict",
-        data={
-            "model_id": model_id,
-            "dataset_id": dataset_id,
-            "project_id": project_id,
-        },
-    )
-    print(f"Prediction ended. Response: {response}, {response.json()}")
-    return response.json()
-
-
 def calculate_start_and_end_date(
     hours_from_past: int,
 ) -> tuple[datetime.datetime, datetime.datetime]:
     """
-    Calculates the start and end date based on the hours from past
+    Calculates the start and end date based on the hours from past,
+    ensuring both dates are rounded to the nearest full hour in the format
+    'yyyy-mm-dd hh:mm:ss' and considering intervals of 6 hours, using UTC time.
     """
-    end_date = datetime.datetime.now()
-    start_date = end_date - datetime.timedelta(hours=hours_from_past)
-    return start_date, end_date
+    now = datetime.datetime.utcnow()
+    end_datetime = now.replace(minute=0, second=0, microsecond=0)
+    start_datetime = end_datetime - datetime.timedelta(hours=hours_from_past)
+
+    return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
 @task()
@@ -251,8 +96,9 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     dataset_id: str,
     table_id: str,
     billing_project_id: str,
-    start_date: str = None,
-    end_date: str = None,
+    start_datetime: str = None,
+    end_datetime: str = None,
+    filename: str = "data",
     save_format: str = "csv",
 ) -> Path:
     """
@@ -261,282 +107,39 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     """
     log(f"Start downloading {dataset_id}.{table_id} data")
 
-    directory_path = Path("data/input/")
+    directory_path = Path(f"{dataset_id}_{table_id}")
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-    savepath = directory_path / f"{dataset_id}_{table_id}"  # TODO:
-
+    savepath = directory_path / f"{filename}.{save_format}"
+    start_date, end_date = start_datetime[:10], end_datetime[:10]
     # pylint: disable=consider-using-f-string
     # noqa E262
     query = """
         SELECT
             *
         FROM rj-cor.{}.{}
+        WHERE data_particao BETWEEN '{}' AND '{}'
+        AND datetime >= '{}' AND datetime < '{}'
         """.format(
-        dataset_id,
-        table_id,
+        dataset_id, table_id, start_date, end_date, start_datetime, end_datetime
     )
-
-    # pylint: disable=consider-using-f-string
-    if start_date:
-        filter_query = """
-            WHERE data_particao BETWEEN '{}' AND '{}'
-        """.format(
-            start_date, end_date
-        )
-        query += filter_query
 
     log(f"Query used to download data:\n{query}")
 
     dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
     if save_format == "csv":
-        dfr.to_csv(f"{savepath}.csv", index=False)
+        dfr.to_csv(savepath, index=False)
     elif save_format == "parquet":
-        dfr.to_parquet(f"{savepath}.parquet", index=False)
+        dfr.to_parquet(savepath, index=False)
     # bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
 
     log(f"{table_id} data saved on {savepath}")
     return savepath
 
 
-@task()
-def execute_prediction_on_gypscie(
-    api,
-    model_params: dict,
-    # hours_to_predict,
-) -> List:
-    """
-    Requisição de execução de um processo de Predição
-    Return
-    {'state': 'STARTED'}
-    {'result': {'output_datasets': [236]}, 'state': 'SUCCESS'}
-    """
-    log("Starting prediction")
-    task_response = api.post(
-        path="workflow_run",
-        json=model_params,
-    )
-    # data={
-    #             "model_id": model_id,
-    #             "dataset_id": dataset_id,
-    #             "project_id": project_id,
-    #         },
-    response = wait_run(api, task_response.json())
-
-    if response["state"] != "SUCCESS":
-        failed_message = "Error processing this dataset. Stop flow or restart this task"
-        log(failed_message)
-        task_state = Failed(failed_message)
-        raise ENDRUN(state=task_state)
-
-    log(f"Prediction ended. Response: {response}")
-    return response["result"].get("output_datasets")
-
-
 @task
-def task_wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
-    """
-    Force flow wait for the end of data processing
-    flow_type: dataflow or processor
-    """
-    return wait_run(api, task_response, flow_type)
-
-
-@task
-def get_dataflow_params(  # pylint: disable=too-many-arguments
-    workflow_id,
-    environment_id,
-    project_id,
-    load_data_funtion_id,
-    pre_processing_function_id,
-    model_function_id,
-    radar_data_id,
-    rain_gauge_data_id,
-    grid_data_id,
-    model_data_id,
-    output_function_id,
-) -> List:
-    """
-    Return parameters for the model
-
-    {
-        "workflow_id": 36,
-        "environment_id": 1,
-        "parameters": [
-            {
-                "function_id":42,
-                "params": {"radar_data_path":178, "rain_gauge_data_path":179, "grid_data_path":177}
-            },
-            {
-                "function_id":43
-            },
-            {
-                "function_id":45,
-                "params": {"model_path":191}  # model was registered on Gypscie as a dataset
-            }
-        ],
-        "project_id": 1
-    }
-    """
-    return {
-        "workflow_id": workflow_id,
-        "environment_id": environment_id,
-        "parameters": [
-            {
-                "function_id": load_data_funtion_id,
-                "params": {
-                    "radar_data_path": radar_data_id,
-                    "rain_gauge_data_path": rain_gauge_data_id,
-                    "grid_data_path": grid_data_id,
-                },
-            },
-            {
-                "function_id": pre_processing_function_id,
-            },
-            {"function_id": model_function_id, "params": {"model_path": model_data_id}},
-            {"function_id": output_function_id, "params": {"output_path": "prediction.npy"}},
-        ],
-        "project_id": project_id,
-    }
-
-
-@task()
-def get_output_dataset_ids_on_gypscie(
-    api,
-    task_id,
-) -> List:
-    """
-    Get output files id with predictions
-    """
-    try:
-        response = api.get(path="status_workflow_run/" + task_id)
-        response = response.json()
-    except HTTPError as err:
-        if err.response.status_code == 404:
-            print(f"Task {task_id} not found")
-            return []
-    log(f"status_workflow_run response {response}")
-
-    return response.get("output_datasets")
-
-
-@task()
-def get_dataset_name_on_gypscie(
-    api,
-    dataset_ids: list,
-) -> List:
-    """
-    Get datasets name using their dataset ids
-    """
-    dataset_names = []
-    log(f"All dataset_ids to get names: {dataset_ids}")
-    for dataset_id in dataset_ids:
-        log(f"Getting name for dataset id: {dataset_id}")
-        try:
-            response = api.get(path="datasets/" + str(dataset_id))
-        except HTTPError as err:
-            if err.response.status_code == 404:
-                print(f"Dataset_id {dataset_id} not found")
-                return []
-        log(f"Get dataset name response {response}")
-        dataset_names.append(response.get("name"))
-    log(f"All dataset names {dataset_names}")
-    return dataset_names
-
-
-@task()
-def download_datasets_from_gypscie(
-    api,
-    dataset_names: List,
-    wait=None,  # pylint: disable=unused-argument
-) -> List:
-    """
-    Get output files with predictions
-    """
-    log(f"\n\nDataset names to be downloaded from Gypscie: {dataset_names}")
-    for dataset_name in dataset_names:
-        log(f"Downloading dataset {dataset_name} from Gypscie")
-        response = api.get(f"download/datasets/{dataset_name}.zip")
-        log(f"Download {dataset_name}'s response: {response}")
-        if response.status_code == 200:
-            dataset = response.content
-            with open(f"{dataset_name}.zip", "wb") as file:
-                file.write(dataset)
-            log(f"Dataset {dataset_name} downloaded")
-        else:
-            log(f"Dataset {dataset_name} not found on Gypscie")
-    return dataset_names
-
-
-@task
-def unzip_files(zip_files: List[str], destination_folder: str = "./") -> List[str]:
-    """
-    Unzip files to destination folder
-    """
-    zip_files = [
-        zip_file if zip_file.endswith(".zip") else zip_file + ".zip" for zip_file in zip_files
-    ]
-    os.makedirs(destination_folder, exist_ok=True)
-
-    unziped_files = []
-    for zip_file in zip_files:
-        with zipfile.ZipFile(zip_file, "r") as zip_ref:
-            zip_ref.extractall(destination_folder)
-            unziped_files.extend(
-                [
-                    os.path.join(destination_folder, nome_arquivo)
-                    for nome_arquivo in zip_ref.namelist()
-                ]
-            )
-
-    return unziped_files
-
-
-@task
-def read_numpy_files(file_paths: List[str]) -> List[np.ndarray]:
-    """
-    Read numpy arrays and return a list with of them
-    """
-    arrays = []
-    for file_path in file_paths:
-        array = np.load(file_path)
-        arrays.append(array)
-    return arrays
-
-
-@task
-def desnormalize_data(array: np.ndarray):
-    """
-    Desnormalize data
-
-    Inputs:
-        array: numpy array
-    Returns:
-        a numpy array with the values desnormalized
-    """
-    return array
-
-
-@task
-def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.DataFrame:
-    """
-    Geolocalize data using grid and add timestamp
-
-    Inputs:
-        prediction_datasets: numpy array
-        now_datetime: string in format YYYY_MM_DD__H_M_S
-    Returns:
-        a pandas dataframe to be saved on GCP
-    Expected columns: latitude, longitude, janela_predicao,
-    valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
-    """
-    now_datetime = now_datetime + 1
-    return prediction_datasets
-
-
-@task
-def create_image(data) -> List:
+def create_image(data, filename) -> List:
     """
     Create image using Geolocalized data or the numpy array from desnormalized_data function
     Exemplo de código que usei pra gerar uma imagem vindo de um xarray:
@@ -603,86 +206,15 @@ def create_image(data) -> List:
         plt.show()
         return save_image_path
     """
-    save_image_path = "image.png"
-    data = data + 1
-    return save_image_path
+    save_images_path = []
+    images = data[0][0, 0]
+    for i in range(3):
+        plt.imshow(images[i], cmap="viridis")
+        plt.axis("off")
 
-
-@task
-def get_dataset_info(station_type: str, source: str) -> Dict:
-    """
-    Inputs:
-        station_type: str ["rain_gauge", "weather_station", "radar"]
-        source: str ["alertario", "inmet", "mendanha"]
-    """
-
-    if station_type == "rain_gauge":
-        dataset_info = {
-            "dataset_id": "clima_pluviometro",
-            "filename": "gauge_station_bq",
-            "partition_date_column": "datetime",
-        }
-        if source == "alertario":
-            dataset_info["table_id"] = "taxa_precipitacao_alertario"
-            dataset_info["destination_table_id"] = "preprocessamento_pluviometro_alertario"
-    elif station_type == "weather_station":
-        dataset_info = {
-            "dataset_id": "clima_pluviometro",
-            "filename": "weather_station_bq",
-            "partition_date_column": "datetime",
-        }
-        if source == "alertario":
-            dataset_info["table_id"] = "meteorologia_alertario"
-            dataset_info["destination_table_id"] = (
-                "preprocessamento_estacao_meteorologica_alertario"
-            )
-        elif source == "inmet":
-            dataset_info["table_id"] = "meteorologia_inmet"
-            dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
-    else:
-        dataset_info = {
-            "dataset_id": "clima_radar",
-            "partition_date_column": "datetime",
-        }
-        if source == "mendanha":
-            dataset_info["storage_path"] = ""
-            dataset_info["destination_table_id"] = "preprocessamento_radar_mendanha"
-        elif source == "guaratiba":
-            dataset_info["storage_path"] = ""
-            dataset_info["destination_table_id"] = "preprocessamento_radar_guaratiba"
-        elif source == "macae":
-            dataset_info["storage_path"] = ""
-            dataset_info["destination_table_id"] = "preprocessamento_radar_macae"
-
-    return dataset_info
-
-
-def path_to_dfr(path: str) -> pd.DataFrame:
-    """
-    Reads a csv or parquet file from the given path and returns a dataframe
-    """
-    dfr = pd.DataFrame()
-    try:
-        if path.endswith(".csv"):
-            dfr = pd.read_csv(path)
-        elif path.endswith(".parquet"):
-            dfr = pd.read_parquet(path)
-        else:
-            raise ValueError("File extension not supported")
-    except AttributeError as error:
-        log(f"type(path) {type(path)} error {error}")
-    return dfr
-
-
-def add_columns_on_dfr(
-    dfr: pd.DataFrame, model_version: int, update_time: bool = False
-) -> pd.DataFrame:
-    """
-    Reads a csv or parquet file from the given path and adds a column
-    with the update time based on Brazil timezone
-    """
-    if update_time:
-        dfr["update_time"] = pd.Timestamp.now(tz="America/Sao_Paulo")
-    if model_version is not None:
-        dfr["model_version"] = model_version
-    return dfr
+        save_filename = f"{filename}_{i + 1}h.png"
+        plt.savefig(filename, bbox_inches="tight")
+        save_images_path.append(save_filename)
+        print(f"Imagem {i + 1} salva como {save_filename}")
+        plt.close()
+    return save_images_path

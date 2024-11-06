@@ -10,6 +10,7 @@ from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+# pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
@@ -27,29 +28,33 @@ from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disa
     prediction_schedule,
 )
 from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
+    calculate_start_and_end_date,
+    create_image,
+    query_data_from_gcp,
+)
+from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     access_api,
     download_datasets_from_gypscie,
     execute_dataset_processor,
-    execute_prediction_on_gypscie,
+    execute_dataflow_on_gypscie,
     get_dataflow_params,
     get_dataset_info,
     get_dataset_name_on_gypscie,
     get_dataset_processor_info,
-    query_data_from_gcp,
     read_numpy_files,
     register_dataset_on_gypscie,
     task_wait_run,
     unzip_files,
 )
 
-# get_billing_project_id, add_columns_on_dfr, create_image, desnormalize_data,
+# get_billing_project_id, desnormalize_data,
 # geolocalize_data, path_to_dfr,
 
-# from pipelines.tasks import (  # pylint: disable=E0611, E0401
-#     get_storage_destination,
-#     task_create_partitions,
-#     upload_files_to_storage,
-# )
+from pipelines.tasks import (  # pylint: disable=E0611, E0401
+    get_storage_destination,
+    # task_create_partitions,
+    upload_files_to_storage,
+)
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
@@ -85,9 +90,7 @@ with Flow(
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
     dataset_id = Parameter("dataset_id", default="clima_previsao_chuva", required=False)
-    table_id = Parameter(
-        "table_id", default="modelo_pluviometro_alertario_radar_mendanha_rionowcast", required=False
-    )
+    table_id = Parameter("table_id", default="rionowcast", required=False)
 
     # Dataset parameters
     station_type = Parameter("station_type", default="pluviometro", required=False)
@@ -129,7 +132,7 @@ with Flow(
         )
 
     dataset_response = register_dataset_on_gypscie(api, filepath=dataset_path, domain_id=domain_id)
-    # TODO: verifcar no codigo do augustp se são esses os parametros corretos
+
     processor_parameters = {
         "dataset1": str(dataset_path).rsplit("/", maxsplit=1)[-1],
         "station_type": station_type,
@@ -148,7 +151,6 @@ with Flow(
     dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
     # dfr_ = path_to_dfr(path=dataset_path)
     # # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
-    # dfr = add_columns_on_dfr(dfr_, model_version, update_time=True)
 
     # # Save pre-treated data on local file with partitions
     # now_datetime = get_now_datetime()
@@ -212,8 +214,8 @@ with Flow(
 
     # Model parameters
     hours_from_past = Parameter("hours_from_past", required=True, default=6)
-    start_date = Parameter("start_date", default=None, required=False)
-    end_date = Parameter("end_date", default=None, required=False)
+    start_datetime = Parameter("start_datetime", default=None, required=False)
+    end_datetime = Parameter("end_datetime", default=None, required=False)
 
     # Gypscie parameters
     environment_id = Parameter("environment_id", default=1, required=False)
@@ -274,34 +276,37 @@ with Flow(
 
     api = access_api()
 
-    # with case(start_date, None):
-    #     start_date, end_date = calculate_start_and_end_date(hours_from_past)
+    with case(start_datetime, None):
+        start_datetime, end_datetime = calculate_start_and_end_date(hours_from_past)
 
-    # # Get data from pre-treated sources that were saved on gcp
-    # pluviometer_alertario_path = query_data_from_gcp(
-    #     pluviometer_dataset_info["dataset_id"],
-    #     pluviometer_dataset_info["table_id"],
-    #     billing_project_id="rj-cor",
-    #     start_date=start_date,
-    #     end_date=end_date,
-    #     save_format="parquet",
-    # )
-    # radar_mendanha_path = query_data_from_gcp(
-    #     radar_dataset_info["dataset_id"],
-    #     radar_dataset_info["table_id"],
-    #     billing_project_id="rj-cor",
-    #     start_date=start_date,
-    #     end_date=end_date,
-    #     save_format="parquet",
-    # )
+    # Get data from pre-treated sources that were saved on gcp
+    pluviometer_alertario_path = query_data_from_gcp(
+        pluviometer_dataset_info["dataset_id"],
+        pluviometer_dataset_info["table_id"],
+        billing_project_id="rj-cor",
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+        filename="rain_gauge",
+        save_format="parquet",
+    )
+    radar_mendanha_path = query_data_from_gcp(
+        radar_dataset_info["dataset_id"],
+        radar_dataset_info["table_id"],
+        billing_project_id="rj-cor",
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+        filename="radar",
+        save_format="parquet",
+    )
 
-    # # Register these datasets on gypscie
-    # pluviometer_alertario_registered = register_dataset_on_gypscie(
-    # api, pluviometer_alertario_path)  # noqa E501, C0301
-    # radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path)
+    # Register these datasets on gypscie
+    pluviometer_alertario_registered = register_dataset_on_gypscie(
+        api, pluviometer_alertario_path, domain_id
+    )  # noqa E501, C0301
+    radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path, domain_id)
 
-    pluviometer_alertario_registered = {"id": 231}
-    radar_mendanha_registered = {"id": 230}
+    # pluviometer_alertario_registered = {"id": 231}
+    # radar_mendanha_registered = {"id": 230}
 
     model_params = get_dataflow_params(
         workflow_id=workflow_id,
@@ -317,8 +322,8 @@ with Flow(
         output_function_id=output_function_id,
     )
 
-    # Send dataset ids to gypscie to get predictions
-    output_dataset_ids = execute_prediction_on_gypscie(
+    # Execute predictions
+    output_dataset_ids = execute_dataflow_on_gypscie(
         api,
         model_params,
     )
@@ -328,28 +333,29 @@ with Flow(
     ziped_dataset_paths = download_datasets_from_gypscie(api, dataset_names=dataset_names)
     dataset_paths = unzip_files(ziped_dataset_paths)
     prediction_datasets = read_numpy_files(dataset_paths)
-
-    # prediction_datasets = download_datasets_from_gypscie(api, prediction_dataset_ids)
-    # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     now_datetime = get_now_datetime()
+    # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     # geolocalized_prediction_datasets = geolocalize_data(
     #     desnormalized_prediction_datasets, now_datetime
     # )
-    # images_path_wb = create_image(geolocalized_prediction_datasets)
-    # dfr = add_columns_on_dfr(geolocalized_prediction_datasets, model_version)
+    # dfr = add_caracterization_columns_on_dfr(
+    #     geolocalized_prediction_datasets, model_version, update_time=True
+    # )
 
     # ##############################
     # #  Save image on GCP         #
     # ##############################
-    # destination_folder_wb = get_storage_destination(
-    #     path="cor-clima-imagens/predicao_precipitacao/rionowcast_1/without_background"
-    # )
-    # upload_files_to_storage(
-    #     project="datario",
-    #     bucket_name="datario-public",
-    #     destination_folder=destination_folder_wb,
-    #     source_file_names=images_path_wb,
-    # )
+    # images_path_wb = create_image(geolocalized_prediction_datasets)
+    images_path_wb = create_image(prediction_datasets, filename=end_datetime)
+    destination_folder_wb = get_storage_destination(
+        path="cor-clima-imagens/predicao_precipitacao/rionowcast/version_1/without_background"
+    )
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb,
+        source_file_names=images_path_wb,
+    )
 
     # ##############################
     # #  Save predictions on GCP   #
