@@ -1,5 +1,6 @@
 # Folders that Git should ignore
 *.ipynb_checkpoints/
+pipelines/precipitation_model/impa/data/
 pipelines/precipitation_model/impa/models/data/
 pipelines/precipitation_model/impa/models/docs/
 pipelines/precipitation_model/impa/models/eval/
