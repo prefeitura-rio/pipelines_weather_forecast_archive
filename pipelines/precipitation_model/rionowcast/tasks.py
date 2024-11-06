@@ -76,7 +76,7 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
 
 
 def calculate_start_and_end_date(
-    hours_from_past: int,
+    hours_from_past,
 ) -> tuple[datetime.datetime, datetime.datetime]:
     """
     Calculates the start and end date based on the hours from past,
