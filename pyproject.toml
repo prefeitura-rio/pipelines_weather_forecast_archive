@@ -14,6 +14,7 @@ prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio.git",
     "pipelines-templates",
 ] }
 geopandas = "^0.14.1"
+matplotlib = "^3.9.2"
 numpy = "^1.26.2"
 pandas = "^2.1.4"
 pendulum = "^3.0.0"
