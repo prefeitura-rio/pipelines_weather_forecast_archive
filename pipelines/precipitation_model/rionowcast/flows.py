@@ -73,8 +73,8 @@ with Flow(
 
     # Query parameters
     data_type = Parameter("data_type", default=None, required=False)
-    start_date = Parameter("start_date", default=None, required=False)
-    end_date = Parameter("end_date", default=None, required=False)
+    start_historical_date = Parameter("start_historical_date", default=None, required=False)
+    end_historical_date = Parameter("end_historical_date", default=None, required=False)
 
     # Gypscie parameters
     environment_id = Parameter("environment_id", default=1, required=False)
@@ -116,8 +116,8 @@ with Flow(
                 dataset_info["dataset_id"],
                 dataset_info["table_id"],
                 billing_project_id="rj-cor",
-                start_date=start_date,
-                end_date=end_date,
+                start_datetime=start_historical_date,
+                end_datetime=end_historical_date,
                 save_format="parquet",
             )
 
