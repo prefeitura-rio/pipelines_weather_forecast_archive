@@ -220,13 +220,16 @@ def create_image(data, filename) -> List:
     """
     save_images_path = []
     images = data[0][0, 0]
+    base_path = os.getcwd()
     for i in range(3):
         plt.imshow(images[i], cmap="viridis")
         plt.axis("off")
 
-        save_filename = f"{filename}_{i + 1}h.png"
+        save_filename = f"{base_path}/{filename}_{i + 1}h.png"
         plt.savefig(filename, bbox_inches="tight")
         save_images_path.append(save_filename)
-        print(f"Imagem {i + 1} salva como {save_filename}")
+        log(f"Imagem {i + 1} salva como {save_filename}")
         plt.close()
+    log(f"Images saved on {save_images_path}")
+    log(os.listdir("./"))
     return save_images_path
