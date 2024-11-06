@@ -16,7 +16,7 @@ from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
-# from pipelines.utils.utils_wf import return_prefect_parameter
+from pipelines.utils.utils_wf import convert_dtypes
 
 # @task()
 # def get_billing_project_id(
@@ -118,7 +118,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     # noqa E262
     query = """
         SELECT
-            *
+            * EXCEPT (update_time, model_version, ano_particao, mes_particao, data_particao)
         FROM rj-cor.{}.{}
         WHERE data_particao BETWEEN '{}' AND '{}'
         AND datetime >= '{}' AND datetime < '{}'
@@ -129,6 +129,17 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     log(f"Query used to download data:\n{query}")
 
     dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
+    dtype_mapping = {
+        "station_id": "int64",
+        "datetime": "datetime64[ns, UTC]",
+        "precipitation": "float64",
+        "latitude": "float64",
+        "longitude": "float64",
+        "altitude": "int64",
+        "horizontal_reflectivity_mean": "float64",
+    }
+
+    dfr = convert_dtypes(dfr, dtype_mapping)
     if save_format == "csv":
         dfr.to_csv(savepath, index=False)
     elif save_format == "parquet":

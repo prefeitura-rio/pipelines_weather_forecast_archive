@@ -453,3 +453,28 @@ def return_prefect_parameter(prefect_parameter):
         text = pd.DataFrame([text])
         text = text.values[0][0]
     return text
+
+
+def convert_dtypes(df, dtype_mapping):
+    """
+    Converts specified columns in a DataFrame to designated data types.
+
+    This function takes a DataFrame and a dictionary mapping column names to
+    desired data types. It applies these types to the corresponding columns
+    in the DataFrame to ensure consistency in data formats.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The DataFrame containing the data to be converted.
+    dtype_mapping : dict
+        A dictionary where keys are column names (str) and values are the
+        target data types (str) for each respective column.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The modified DataFrame with columns converted to the specified types.
+    """
+    applicable_dtypes = {col: dtype for col, dtype in dtype_mapping.items() if col in df.columns}
+    return df.astype(applicable_dtypes)
