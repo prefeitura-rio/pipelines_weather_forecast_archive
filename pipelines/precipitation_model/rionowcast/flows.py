@@ -281,8 +281,8 @@ with Flow(
 
     # Get data from pre-treated sources that were saved on gcp
     pluviometer_alertario_path = query_data_from_gcp(
-        pluviometer_dataset_info["dataset_id"],
-        pluviometer_dataset_info["table_id"],
+        dataset_id="clima_previsao_chuva_staging",
+        table_id=pluviometer_dataset_info["table_id"],
         billing_project_id="rj-cor",
         start_datetime=start_datetime,
         end_datetime=end_datetime,
@@ -290,8 +290,8 @@ with Flow(
         save_format="parquet",
     )
     radar_mendanha_path = query_data_from_gcp(
-        radar_dataset_info["dataset_id"],
-        radar_dataset_info["table_id"],
+        dataset_id="clima_previsao_chuva_staging",
+        table_id=radar_dataset_info["table_id"],
         billing_project_id="rj-cor",
         start_datetime=start_datetime,
         end_datetime=end_datetime,
