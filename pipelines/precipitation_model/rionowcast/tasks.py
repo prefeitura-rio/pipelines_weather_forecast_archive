@@ -84,7 +84,8 @@ def calculate_start_and_end_date(
     """
     now = datetime.datetime.utcnow()
     end_datetime = now.replace(minute=0, second=0, microsecond=0)
-    start_datetime = end_datetime - datetime.timedelta(hours=hours_from_past)
+    hours_from_past_ = hours_from_past
+    start_datetime = end_datetime - datetime.timedelta(hours=hours_from_past_)
 
     return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
