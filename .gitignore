@@ -8,7 +8,9 @@ pipelines/precipitation_model/impa/models/personal/
 pipelines/precipitation_model/impa/models/radar_cal/
 pipelines/precipitation_model/impa/models/lightning_logs/
 **/test_flow/** */
-pipelines/precipitation_model/rionowcast/gypscie
+pipelines/precipitation_model/rionowcast/gypscie/integrator/
+pipelines/precipitation_model/rionowcast/gypscie/processors/
+**/test_flow/**
 
 # user defined
 .replit
@@ -23,8 +25,6 @@ test/*.csv
 setup.py
 .vscode/*
 *.hdf
-**/gypscie/**
-**/test_flow/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -163,9 +163,3 @@ dmypy.json
 # MLflow
 **/mlruns/**
 *.csv
-**/gypscie/processors/**
-!/gypscie/**/MLproject
-!/gypscie/**/etl_alertario.py
-!/gypscie/**/conda.yaml
-/gypscie/utils/logging.py
-!/gypscie/processors/utils/*
