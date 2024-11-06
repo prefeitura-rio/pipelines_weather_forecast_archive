@@ -9,12 +9,12 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 import pandas as pd
-import pendulum
-from google.cloud import storage
-from prefect import task
-from prefect.triggers import all_successful
-from prefeitura_rio.pipelines_utils.infisical import get_secret
-from prefeitura_rio.pipelines_utils.logging import log
+import pendulum  # pylint: disable=E0611, E0401
+from google.cloud import storage  # pylint: disable=E0611, E0401
+from prefect import task  # pylint: disable=E0611, E0401
+from prefect.triggers import all_successful  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import get_secret  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.pandas import (  # pylint: disable=E0611, E0401
     parse_date_columns,
     to_partitions,
@@ -23,7 +23,7 @@ from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611,
     get_redis_client,
 )
 
-from pipelines.utils import treat_redis_output  # get_redis_client_from_infisical,
+from pipelines.utils.utils_wf import treat_redis_output  # get_redis_client_from_infisical,
 
 # from redis_pal import RedisPal
 

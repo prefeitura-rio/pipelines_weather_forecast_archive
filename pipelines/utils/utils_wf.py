@@ -6,18 +6,19 @@ import json
 from os import getenv
 from typing import Callable
 
-import basedosdados as bd
+import basedosdados as bd  # pylint: disable=E0611, E0401
 import pandas as pd
-import pendulum
-from google.cloud import storage
-from loguru import logger
+import pendulum  # pylint: disable=E0611, E0401
+from google.cloud import storage  # pylint: disable=E0611, E0401
+from loguru import logger  # pylint: disable=E0611, E0401
 
 # from redis_pal import RedisPal
 # import pipelines.constants
+  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.infisical import (
-    get_secret,  # pylint: disable=E0611, E0401
+    get_secret,
 )
-from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
     get_redis_client,
 )
