@@ -440,3 +440,8 @@ def download_blob(bucket_name, source_blob_name, destination_file_name) -> None:
     blob.download_to_filename(destination_file_name)
 
     print(f"Blob {source_blob_name} downloaded to file path {destination_file_name}. successfully ")
+
+
+def return_prefect_parameter(prefect_parameter):
+    """Solve problems with prefect parameters returning then as string"""
+    return str(prefect_parameter)
