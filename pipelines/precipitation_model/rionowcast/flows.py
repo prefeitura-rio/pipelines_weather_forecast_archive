@@ -10,6 +10,7 @@ from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+
 # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
@@ -32,11 +33,15 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     create_image,
     query_data_from_gcp,
 )
+from pipelines.tasks import (  # pylint: disable=E0611, E0401; task_create_partitions,
+    get_storage_destination,
+    upload_files_to_storage,
+)
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     access_api,
     download_datasets_from_gypscie,
-    execute_dataset_processor,
     execute_dataflow_on_gypscie,
+    execute_dataset_processor,
     get_dataflow_params,
     get_dataset_info,
     get_dataset_name_on_gypscie,
@@ -50,11 +55,6 @@ from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
 # get_billing_project_id, desnormalize_data,
 # geolocalize_data, path_to_dfr,
 
-from pipelines.tasks import (  # pylint: disable=E0611, E0401
-    get_storage_destination,
-    # task_create_partitions,
-    upload_files_to_storage,
-)
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",

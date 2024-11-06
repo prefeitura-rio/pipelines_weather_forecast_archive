@@ -14,10 +14,8 @@ from loguru import logger  # pylint: disable=E0611, E0401
 
 # from redis_pal import RedisPal
 # import pipelines.constants
-  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.infisical import (
-    get_secret,
-)
+# pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
     get_redis_client,
