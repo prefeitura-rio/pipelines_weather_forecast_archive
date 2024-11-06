@@ -16,7 +16,7 @@ from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
-from pipelines.utils.utils_wf import return_prefect_parameter
+# from pipelines.utils.utils_wf import return_prefect_parameter
 
 # @task()
 # def get_billing_project_id(
@@ -86,8 +86,8 @@ def calculate_start_and_end_date(
     """
     now = datetime.datetime.utcnow()
     end_datetime = now.replace(minute=0, second=0, microsecond=0)
-    hours_from_past_ = return_prefect_parameter(hours_from_past)
-    start_datetime = end_datetime - datetime.timedelta(hours=int(hours_from_past_))
+    # hours_from_past_ = return_prefect_parameter(hours_from_past)
+    start_datetime = end_datetime - datetime.timedelta(hours=6)
 
     return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
