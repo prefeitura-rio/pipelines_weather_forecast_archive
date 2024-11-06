@@ -213,7 +213,7 @@ with Flow(
     #########################
 
     # Model parameters
-    hours_from_past = Parameter("hours_from_past", required=True, default=6)
+    hours_from_past = Parameter("hours_from_past", required=True, default="6")
     start_datetime = Parameter("start_datetime", default=None, required=False)
     end_datetime = Parameter("end_datetime", default=None, required=False)
 
