@@ -88,6 +88,7 @@ def calculate_start_and_end_date(
     end_datetime = now.replace(minute=0, second=0, microsecond=0)
     # hours_from_past_ = return_prefect_parameter(hours_from_past)
     start_datetime = end_datetime - datetime.timedelta(hours=6)
+    log("Start datetime: {start_datetime}, End datetime: {end_datetime}")
 
     return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
 

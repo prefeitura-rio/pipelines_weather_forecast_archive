@@ -73,8 +73,8 @@ with Flow(
 
     # Query parameters
     data_type = Parameter("data_type", default=None, required=False)
-    start_historical_date = Parameter("start_historical_date", default=None, required=False)
-    end_historical_date = Parameter("end_historical_date", default=None, required=False)
+    start_historical_datetime = Parameter("start_historical_datetime", default=None, required=False)
+    end_historical_datetime = Parameter("end_historical_datetime", default=None, required=False)
 
     # Gypscie parameters
     environment_id = Parameter("environment_id", default=1, required=False)
@@ -116,8 +116,8 @@ with Flow(
                 dataset_info["dataset_id"],
                 dataset_info["table_id"],
                 billing_project_id="rj-cor",
-                start_datetime=start_historical_date,
-                end_datetime=end_historical_date,
+                start_datetime=start_historical_datetime,
+                end_datetime=end_historical_datetime,
                 save_format="parquet",
             )
 
@@ -214,8 +214,8 @@ with Flow(
 
     # Model parameters
     hours_from_past = Parameter("hours_from_past", required=True, default=6)
-    start_datetime = Parameter("start_datetime", default=None, required=False)
-    end_datetime = Parameter("end_datetime", default=None, required=False)
+    start_historical_datetime = Parameter("start_historical_datetime", default=None, required=False)
+    end_historical_datetime = Parameter("end_historical_datetime", default=None, required=False)
 
     # Gypscie parameters
     environment_id = Parameter("environment_id", default=1, required=False)
@@ -276,16 +276,18 @@ with Flow(
 
     api = access_api()
 
-    with case(start_datetime, None):
-        start_datetime, end_datetime = calculate_start_and_end_date(hours_from_past)
+    with case(start_historical_datetime, None):
+        start_historical_datetime, end_historical_datetime = calculate_start_and_end_date(
+            hours_from_past
+        )
 
     # Get data from pre-treated sources that were saved on gcp
     pluviometer_alertario_path = query_data_from_gcp(
         dataset_id="clima_previsao_chuva_staging",
         table_id=pluviometer_dataset_info["table_id"],
         billing_project_id="rj-cor",
-        start_datetime=start_datetime,
-        end_datetime=end_datetime,
+        start_datetime=start_historical_datetime,
+        end_datetime=end_historical_datetime,
         filename="rain_gauge",
         save_format="parquet",
     )
@@ -293,8 +295,8 @@ with Flow(
         dataset_id="clima_previsao_chuva_staging",
         table_id=radar_dataset_info["table_id"],
         billing_project_id="rj-cor",
-        start_datetime=start_datetime,
-        end_datetime=end_datetime,
+        start_datetime=start_historical_datetime,
+        end_datetime=end_historical_datetime,
         filename="radar",
         save_format="parquet",
     )
@@ -346,7 +348,7 @@ with Flow(
     # #  Save image on GCP         #
     # ##############################
     # images_path_wb = create_image(geolocalized_prediction_datasets)
-    images_path_wb = create_image(prediction_datasets, filename=end_datetime)
+    images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime)
     destination_folder_wb = get_storage_destination(
         path="cor-clima-imagens/predicao_precipitacao/rionowcast/version_1/without_background"
     )
