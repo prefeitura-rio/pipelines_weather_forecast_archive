@@ -16,9 +16,11 @@ class constants(Enum):
     ######################################
     # Agent labels
     ######################################
-    # EXAMPLE_AGENT_LABEL = "example_agent"
+    WEATHER_FORECAST_AGENT_LABEL = "weather-forecast"
 
     ######################################
     # Other constants
     ######################################
     # EXAMPLE_CONSTANT = "example_constant"
+    INFISICAL_USERNAME = "USERNAME"
+    INFISICAL_PASSWORD = "PASSWORD"

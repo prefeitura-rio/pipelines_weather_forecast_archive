@@ -1,0 +1,14 @@
+name: gypscie-data-processor
+channels:
+  - defaults
+dependencies:
+  - python=3.9.12
+  - pip=24.0
+  - pip:
+    - numpy
+    - pandas
+    - mlflow
+    - argparse
+    - fsspec
+    - MetPy
+    - python-dateutil

@@ -1,0 +1,12 @@
+name: data-transformer
+conda_env: conda.yaml
+entry_points:
+  main:
+    parameters:
+      dataset1: {type: str, default: ""}
+      station_type: {type: str, default: ""}
+    # command: "python etl_alertario.py -p {dataset1} {station1}"
+    command: "python etl_alertario.py -p --dataset1 {dataset1} -s {station_type}"
+    # command: "python etl_alertario.py -t {dataset1}"
+    # command: "python etl_alertario.py {dataset_1} {dataset_2}"
+    # command: "python etl_alertario.py -t"
