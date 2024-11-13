@@ -3,23 +3,23 @@
 Utils file
 """
 
+import concurrent.futures
+import signal
+
 # from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
 
-import requests
-import concurrent.futures
-import simplejson
-
 import basedosdados as bd
 import requests
+import simplejson
 
-import signal
-from typing import Dict
 
 class TimeoutException(Exception):
     pass
+
+
 def timeout_handler(signum, frame):
     raise TimeoutException("Tempo limite total excedido para a chamada da API")
 
@@ -94,13 +94,15 @@ class GypscieApi:
 
     def get(self, path: str, timeout: int = 120) -> Dict:
         self._refresh_token_if_needed()
-        
+
         # Configura o sinal de timeout total
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(timeout)  # Inicia o timer para o timeout total
 
         try:
-            response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=(30, 30))
+            response = requests.get(
+                f"{self._base_url}{path}", headers=self._headers, timeout=(30, 30)
+            )
             response.raise_for_status()
             return response.json()
         except TimeoutException:
@@ -110,7 +112,7 @@ class GypscieApi:
             return response.text
         finally:
             signal.alarm(0)  # Cancela o alarme se a chamada foi bem-sucedida ou falhou
-        
+
     # def get(self, path: str, timeout: int = 120) -> Dict:
     #     """
     #     get
