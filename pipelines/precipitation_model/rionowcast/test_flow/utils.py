@@ -8,8 +8,20 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
 
+import requests
+import concurrent.futures
+import simplejson
+
 import basedosdados as bd
 import requests
+
+import signal
+from typing import Dict
+
+class TimeoutException(Exception):
+    pass
+def timeout_handler(signum, frame):
+    raise TimeoutException("Tempo limite total excedido para a chamada da API")
 
 
 class GypscieApi:
@@ -81,16 +93,35 @@ class GypscieApi:
         return self._expires_at
 
     def get(self, path: str, timeout: int = 120) -> Dict:
-        """
-        get
-        """
         self._refresh_token_if_needed()
-        response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
-        response.raise_for_status()
-        if "application/json" in response.headers.get("Content-Type", ""):
+        
+        # Configura o sinal de timeout total
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout)  # Inicia o timer para o timeout total
+
+        try:
+            response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=(30, 30))
+            response.raise_for_status()
             return response.json()
-        else:
-            return response
+        except TimeoutException:
+            print("Timeout total atingido para a chamada API")
+            return {"error": "Timeout total atingido"}
+        except simplejson.JSONDecodeError:
+            return response.text
+        finally:
+            signal.alarm(0)  # Cancela o alarme se a chamada foi bem-sucedida ou falhou
+        
+    # def get(self, path: str, timeout: int = 120) -> Dict:
+    #     """
+    #     get
+    #     """
+    #     self._refresh_token_if_needed()
+    #     response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
+    #     response.raise_for_status()
+    #     if "application/json" in response.headers.get("Content-Type", ""):
+    #         return response.json()
+    #     else:
+    #         return response
 
     def put(self, path, json_data=None):
         """
