@@ -13,7 +13,7 @@ from pipelines.constants import constants
 update_schedule = Schedule(
     clocks=[
         IntervalClock(
-            interval=timedelta(minutes=20),
+            interval=timedelta(minutes=60),
             start_date=datetime(2023, 1, 1, 0, 1, 0),
             labels=[
                 constants.WEATHER_FORECAST_AGENT_LABEL.value,
