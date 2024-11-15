@@ -351,9 +351,9 @@ with Flow(
     # ##############################
     # images_path_wb = create_image(geolocalized_prediction_datasets)
     images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime)
-    model_version_ = convert_parameter_to_type(model_version, int)
+    model_version_ = convert_parameter_to_type(model_version, str)
     destination_folder_wb = get_storage_destination(
-        path=f"cor-clima-imagens/predicao_precipitacao/rionowcast/v{model_version_}"
+        path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
     )
     upload_files_to_storage(
         project="datario",
