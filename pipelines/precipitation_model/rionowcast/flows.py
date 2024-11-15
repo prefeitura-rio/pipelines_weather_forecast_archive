@@ -351,15 +351,26 @@ with Flow(
     # images_path_wb = create_image(geolocalized_prediction_datasets)
     images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime)
     destination_folder_wb = get_storage_destination(
-        path="cor-clima-imagens/predicao_precipitacao/rionowcast/version_1/without_background"
+        path=f"cor-clima-imagens/predicao_precipitacao/rionowcast/v{int(model_version)}"
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
-        destination_folder=destination_folder_wb,
-        source_file_names=images_path_wb,
+        destination_folder=destination_folder_wb + "/1h/without_background",
+        source_file_names=images_path_wb[0],
     )
-
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb + "/2h/without_background",
+        source_file_names=images_path_wb[1],
+    )
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb + "/3h/without_background",
+        source_file_names=images_path_wb[2],
+    )
     # ##############################
     # #  Save predictions on GCP   #
     # ##############################
