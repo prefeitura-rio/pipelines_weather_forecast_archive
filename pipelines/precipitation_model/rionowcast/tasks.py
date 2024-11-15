@@ -76,6 +76,7 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
     return dfr
 
 
+@task(nout=2)
 def calculate_start_and_end_date(
     hours_from_past: int = 6,
     end_historical_datetime: str = None,

@@ -278,7 +278,6 @@ with Flow(
 
     api = access_api()
 
-    hours_from_past = 6
     start_historical_datetime, end_historical_datetime = calculate_start_and_end_date(
         hours_from_past, end_historical_datetime
     )
