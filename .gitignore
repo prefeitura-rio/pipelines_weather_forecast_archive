@@ -7,10 +7,9 @@ pipelines/precipitation_model/impa/models/models/
 pipelines/precipitation_model/impa/models/personal/
 pipelines/precipitation_model/impa/models/radar_cal/
 pipelines/precipitation_model/impa/models/lightning_logs/
-**/test_flow/** */
 pipelines/precipitation_model/rionowcast/gypscie/integrator/
 pipelines/precipitation_model/rionowcast/gypscie/processors/
-**/test_flow/**
+**/test_flow*
 
 # user defined
 .replit
