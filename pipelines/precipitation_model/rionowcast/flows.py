@@ -213,8 +213,7 @@ with Flow(
     #########################
 
     # Model parameters
-    hours_from_past = Parameter("hours_from_past", required=True, default=6)
-    start_historical_datetime = Parameter("start_historical_datetime", default=None, required=False)
+    hours_from_past = Parameter("hours_from_past", required=False, default=6)
     end_historical_datetime = Parameter("end_historical_datetime", default=None, required=False)
 
     # Gypscie parameters
@@ -249,13 +248,13 @@ with Flow(
         "grid_data_id", default=177, required=False  # , description="Grid ID saved as a dataset"
     )  # mudar.
 
+    model_version = Parameter("model_version", default=1, required=False)
+
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
     dataset_id = mode_redis = Parameter("dataset_id", default="clima_rionowcast", required=False)
     table_id = Parameter("table_id", default="predicao_precipitacao", required=False)()
-
-    model_version = Parameter("model_version", default=1, required=False)
 
     # Pre-treated Data Sources on GCP
     pluviometer_dataset_info = {  # fonte: Saída do Dataflow ETL de pluviômetros no GCP
@@ -276,10 +275,10 @@ with Flow(
 
     api = access_api()
 
-    with case(start_historical_datetime, None):
-        start_historical_datetime, end_historical_datetime = calculate_start_and_end_date(
-            hours_from_past
-        )
+    hours_from_past = 6
+    start_historical_datetime, end_historical_datetime = calculate_start_and_end_date(
+        hours_from_past, end_historical_datetime
+    )
 
     # Get data from pre-treated sources that were saved on gcp
     pluviometer_alertario_path = query_data_from_gcp(

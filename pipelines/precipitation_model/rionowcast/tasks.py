@@ -77,18 +77,59 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
 
 
 def calculate_start_and_end_date(
-    hours_from_past,
-) -> tuple[datetime.datetime, datetime.datetime]:
+    hours_from_past: int = 6,
+    end_historical_datetime: str = None,
+) -> tuple[str, str]:
     """
-    Calculates the start and end date based on the hours from past,
-    ensuring both dates are rounded to the nearest full hour in the format
-    'yyyy-mm-dd hh:mm:ss' and considering intervals of 6 hours, using UTC time.
+    Calculate the start and end datetime based on a specified number of hours in the past.
+
+    The function computes two datetime values: the start and end times.
+    The `end_historical_datetime_date` serves as the reference endpoint for calculations, and
+    the `hours_from_past` parameter determines how far back in time the start date will be.
+    Both values are rounded to the nearest full hour, and the result is returned as strings in
+    the format 'yyyy-mm-dd hh:mm:ss' (UTC).
+
+    Parameters:
+    ----------
+    hours_from_past : int
+        Number of hours to subtract from `end_historical_datetime_date` to determine the start
+        datetime.
+    end_historical_datetime_date : str, optional
+        The ending datetime as a string in the format 'yyyy-mm-dd hh:mm:ss'.
+        If not provided, the current UTC time (`datetime.datetime.utcnow()`) is used as the default.
+
+    Returns:
+    -------
+    tuple[str, str]
+        A tuple containing two strings:
+        - The start datetime (earlier timestamp).
+        - The end datetime (reference timestamp).
+
+    Raises:
+    ------
+    ValueError
+        If `end_historical_datetime_date` is provided but does not follow the expected format.
+
+    Example:
+    -------
+    >>> calculate_start_and_end_date(6, "2024-11-13 12:00:00")
+    ('2024-11-13 06:00:00', '2024-11-13 12:00:00')
     """
-    now = datetime.datetime.utcnow()
-    end_datetime = now.replace(minute=0, second=0, microsecond=0)
-    # hours_from_past_ = return_prefect_parameter(hours_from_past)
-    start_datetime = end_datetime - datetime.timedelta(hours=6)
-    log("Start datetime: {start_datetime}, End datetime: {end_datetime}")
+    hours_from_past = int(hours_from_past)
+    if not end_historical_datetime:
+        end_historical_datetime = datetime.datetime.utcnow()
+    else:
+        try:
+            end_historical_datetime = datetime.datetime.strptime(
+                end_historical_datetime, "%Y-%m-%d %H:%M:%S"
+            )
+        except ValueError as e:
+            raise ValueError(f"Invalid date format: {e}")
+
+    end_datetime = end_historical_datetime.replace(minute=0, second=0, microsecond=0)
+    start_datetime = end_datetime - datetime.timedelta(hours=hours_from_past)
+
+    print(f"Start datetime: {start_datetime}, End datetime: {end_datetime}")
 
     return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
