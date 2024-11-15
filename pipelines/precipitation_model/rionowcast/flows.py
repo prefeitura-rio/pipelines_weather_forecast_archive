@@ -35,6 +35,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     query_data_from_gcp,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401; task_create_partitions,
+    convert_parameter_to_type,
     get_storage_destination,
     upload_files_to_storage,
 )
@@ -350,8 +351,9 @@ with Flow(
     # ##############################
     # images_path_wb = create_image(geolocalized_prediction_datasets)
     images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime)
+    model_version_ = convert_parameter_to_type(model_version, int)
     destination_folder_wb = get_storage_destination(
-        path=f"cor-clima-imagens/predicao_precipitacao/rionowcast/v{int(model_version)}"
+        path=f"cor-clima-imagens/predicao_precipitacao/rionowcast/v{model_version_}"
     )
     upload_files_to_storage(
         project="datario",

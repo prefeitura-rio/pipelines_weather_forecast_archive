@@ -324,3 +324,11 @@ def task_create_partitions(
     log(f"Partition saved files {saved_files}")
     log(f"Returned path {savepath}, {type(savepath)}")
     return Path(savepath)
+
+
+@task
+def convert_parameter_to_type(parameter_, new_type) -> str:
+    """Function to convert model version from Parameter to type specified on new_type"""
+    print(f"Actual type of parameter {parameter_}: {type(parameter_)}")
+    print(f"New type {type(new_type(parameter_))}")
+    return new_type(parameter_)
