@@ -146,7 +146,13 @@ class AlertaRioRG(Instrument):
         self._institution = "Alerta Rio"
         self._instrument = "Rain Gauge"
         self.name = f"{self._institution} - {self._instrument}"
-        self._features = ["precipitation", "hour_sin", "hour_cos", "month_sin", "month_cos"]
+        self._features = [
+            "precipitation",
+            "hour_sin",
+            "hour_cos",
+            "month_sin",
+            "month_cos",
+        ]
 
     def prepare_data(self):
         super().prepare_data()

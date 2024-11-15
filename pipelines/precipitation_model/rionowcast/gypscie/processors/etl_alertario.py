@@ -593,7 +593,10 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             dfr.reset_index(drop=True, inplace=True)
 
             print(dfr.shape)
-            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"}  # ?
+            attrs = {
+                "naming_authority": "Alerta Rio",
+                "timezone": "America/Sao_Paulo",
+            }  # ?
             attrs.update(self.instrument)  # ?
             attrs.update(self.variables)  # ?
 
@@ -753,10 +756,16 @@ def parameter_parser():
     # parser = Logger.add_log_parameters(parser, os.path.basename(__file__))
 
     parser.add_argument(
-        "-t", "--transform", action="store_true", help="Perform light transform process."
+        "-t",
+        "--transform",
+        action="store_true",
+        help="Perform light transform process.",
     )
     parser.add_argument(
-        "-p", "--preprocessing", action="store_true", help="Perform heavy transform process."
+        "-p",
+        "--preprocessing",
+        action="store_true",
+        help="Perform heavy transform process.",
     )
     parser.add_argument(
         "-s",

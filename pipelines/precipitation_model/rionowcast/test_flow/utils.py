@@ -3,14 +3,13 @@
 Utils file
 """
 
+# from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
 
-import basedosdados as bd  # pylint: disable=E0611, E0401
+import basedosdados as bd
 import requests
-import simplejson  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 
 class GypscieApi:
@@ -51,7 +50,7 @@ class GypscieApi:
             # now + expires_in_seconds - 10 minutes
             expires_at = datetime.now() + timedelta(seconds=30 * 60)
         else:
-            log(f"Status code: {response.status_code}\nResponse:{response.content}")
+            print(f"Status code: {response.status_code}\nResponse:{response.content}")
             raise Exception()
 
         return {"Authorization": f"Bearer {token}"}, token, expires_at
@@ -88,17 +87,17 @@ class GypscieApi:
         self._refresh_token_if_needed()
         response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
         response.raise_for_status()
-        try:
+        if "application/json" in response.headers.get("Content-Type", ""):
             return response.json()
-        except simplejson.JSONDecodeError:
+        else:
             return response
 
-    def put(self, path, json=None):
+    def put(self, path, json_data=None):
         """
         put
         """
         self._refresh_token_if_needed()
-        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json)
+        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json_data)
         return response
 
     def post(self, path, data: dict = None, json: dict = None, files: dict = None):
@@ -113,7 +112,7 @@ class GypscieApi:
             json=json,
             files=files,
         )
-        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json)
+        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json_data)
         return response
 
 
@@ -145,21 +144,21 @@ def wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
     if "task_id" in task_response.keys():
         _id = task_response.get("task_id")
     else:
-        log(f"Error processing: task_id not found on response:{task_response}")
+        print(f"Error processing: task_id not found on response:{task_response}")
         # TODO: stop flow here
 
-    # Request to get the execution status
+    # Requisição do resultado da task_id
     path_flow_type = "status_workflow_run" if flow_type == "dataflow" else "status_processor_run"
     response = api.get(
         path=f"{path_flow_type}/" + _id,
     )
 
-    log(f"Execution status: {response}.")
+    print(f"Response state: {response['state']}")
     while response["state"] == "STARTED":
         sleep(5)
         response = wait_run(api, task_response)
 
     if response["state"] != "SUCCESS":
-        log("Error processing this dataset. Stop flow or restart this task")
-    log(f"Wait run ended. Response: {response}.")
+        print("Error processing this dataset. Stop flow or restart this task")
+
     return response

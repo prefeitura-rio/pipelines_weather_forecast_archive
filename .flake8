@@ -1,2 +1,7 @@
 [flake8]
-max-line-length = 100
+max-line-length = 120
+
+exclude =
+    **/rionowcast/gypscie/*
+    **/rionowcast/test_flow/*
+    script.py

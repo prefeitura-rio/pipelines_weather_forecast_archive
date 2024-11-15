@@ -32,7 +32,10 @@ class Logger(object):
         """
         logfile = (root_basename.split(".")[0]) + ".log"
         parser.add_argument(
-            "--logfile", type=str, default=logfile, help="Log filename. Default __file__ basename"
+            "--logfile",
+            type=str,
+            default=logfile,
+            help="Log filename. Default __file__ basename",
         )
         parser.add_argument(
             "--loglevel",

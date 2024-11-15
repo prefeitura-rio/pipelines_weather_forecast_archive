@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
+# flake8: noqa: E501
 """
 Download meteorological data, treat then, integrate and predict
 """
@@ -194,7 +195,9 @@ preprocessing_previsao_chuva_rionowcast.run_config = KubernetesRun(
 )
 # preprocessing_previsao_chuva_rionowcast.schedule = update_schedule
 
-# https://github.com/prefeitura-rio/pipelines_rj_escritorio/blob/2433238db27adb1213059832f238495b9ecb5043/pipelines/deteccao_alagamento_cameras/flooding_detection/flows.py#L112
+# https://github.com/prefeitura-rio/pipelines_rj_escritorio/blob/
+# 2433238db27adb1213059832f238495b9ecb5043/pipelines/deteccao_alagamento_cameras/
+# flooding_detection/flows.py#L112
 # https://linen.prefect.io/t/13543083/how-do-i-run-the-same-subflow-concurrently-for-items-in-a-li
 
 

@@ -240,9 +240,11 @@ def upload_files_to_storage(
         log(f"File {file_name} sent to {destination_folder} on bucket {bucket_name}.")
 
 
-# @task
 # def upload_files_to_storage(
-#     project: str, bucket_name: str, destination_blob_name: str, source_file_name: List[str]
+#     project: str,
+#     bucket_name: str,
+#     destination_blob_name: str,
+#     source_file_name: List[str],
 # ) -> None:
 #     """
 #     Upload files to GCS
