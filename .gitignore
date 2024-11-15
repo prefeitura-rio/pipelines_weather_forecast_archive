@@ -9,6 +9,8 @@ pipelines/precipitation_model/impa/models/personal/
 pipelines/precipitation_model/impa/models/radar_cal/
 pipelines/precipitation_model/impa/models/lightning_logs/
 pipelines/precipitation_model/rionowcast/test_flow/
+*.nc
+**/test_flow.*
 
 # User-defined
 .replit
