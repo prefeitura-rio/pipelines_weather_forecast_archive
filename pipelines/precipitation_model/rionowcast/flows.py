@@ -359,19 +359,19 @@ with Flow(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/1h/without_background",
-        source_file_names=images_path_wb[0],
+        source_file_names=[images_path_wb[0]],
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/2h/without_background",
-        source_file_names=images_path_wb[1],
+        source_file_names=[images_path_wb[1]],
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/3h/without_background",
-        source_file_names=images_path_wb[2],
+        source_file_names=[images_path_wb[2]],
     )
     # ##############################
     # #  Save predictions on GCP   #

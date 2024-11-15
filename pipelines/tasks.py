@@ -327,7 +327,7 @@ def task_create_partitions(
 
 
 @task
-def convert_parameter_to_type(parameter_, new_type) -> str:
+def convert_parameter_to_type(parameter_, new_type):
     """Function to convert model version from Parameter to type specified on new_type"""
     print(f"Actual type of parameter {parameter_}: {type(parameter_)}")
     print(f"New type {type(new_type(parameter_))}")
