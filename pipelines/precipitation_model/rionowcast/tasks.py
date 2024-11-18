@@ -268,7 +268,10 @@ def create_image(data, filename) -> List:
         plt.imshow(images[i], cmap="viridis")
         plt.axis("off")
 
-        save_filename = f"{base_path}/{filename}_{i + 1}h.png"
+        save_filename = f"{base_path}/{filename}.png"
+        # save_filename = f"{base_path}/{filename}_{i + 1}h.png"
+        # não pode ter nada no final do nome, para ter no começo tem que
+        # alterar a busca no bucket na api
         plt.savefig(save_filename, bbox_inches="tight")
         save_images_path.append(save_filename)
         log(f"Imagem {i + 1} salva como {save_filename}")
