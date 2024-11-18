@@ -161,7 +161,7 @@ def execute_dataset_processor(
     dataset_id: list,  # como pegar os vários datasets
     environment_id: int,
     project_id: int,
-    parameters: dict
+    parameters: dict,
     # adicionar campos do dataset_processor
 ) -> List:
     """
@@ -554,3 +554,34 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
             dataset_info["destination_table_id"] = "preprocessamento_radar_macae"
 
     return dataset_info
+
+
+def get_dataset_name_on_gypscie(
+    api,
+    dataset_ids: list,
+) -> List:
+    """
+    Get datasets name using their dataset ids
+    """
+    dataset_names = []
+    print(f"All dataset_ids to get names: {dataset_ids}")
+    for dataset_id in dataset_ids:
+        print(f"Getting name for dataset id: {dataset_id}")
+        try:
+            response = api.get(path="datasets/" + str(dataset_id))
+            print("r", response)
+        except HTTPError as err:
+            if err.response.status_code == 404:
+                failed_message = f"Dataset_id {dataset_id} not found"
+            else:
+                failed_message = f"An error occurred: {err}"
+                # print(f"Get response: {response}")
+            failed_message += " Stoping Flow."
+            print(failed_message)
+            # task_state = Failed(failed_message)
+            # raise ENDRUN(state=task_state) from err
+        print(f"Get dataset name response {response}")
+        if "name" in response:
+            dataset_names.append(response.get("name"))
+    print(f"All dataset names {dataset_names}")
+    return dataset_names

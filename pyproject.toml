@@ -45,6 +45,7 @@ pendulum = "^3.0.0"
 requests = "^2.31.0"
 shapely = "^2.0.2"
 h3 = "^3.7.6"
+psutil = "^5.9.8"
 
 [tool.poetry.group.dev]
 optional = true

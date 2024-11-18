@@ -11,11 +11,10 @@ pipelines/precipitation_model/impa/models/lightning_logs/
 pipelines/precipitation_model/rionowcast/gypscie/integrator/
 pipelines/precipitation_model/rionowcast/gypscie/processors/
 **/test_flow*
-pipelines/precipitation_model/rionowcast/test_flow/** */
-**/pipelines/precipitation_model/rionowcast/test_flow/test_flow.ipynb
 **/gypscie/**
-pipelines/precipitation_model/rionowcast/test_flow/**
 **/test_flow/**
+*.nc
+
 
 # user defined
 .replit
