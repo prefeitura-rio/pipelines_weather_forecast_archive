@@ -263,12 +263,13 @@ def create_image(data, filename) -> List:
     """
     save_images_path = []
     images = data[0][0, 0]
-    base_path = os.getcwd()
     for i in range(3):
         plt.imshow(images[i], cmap="viridis")
         plt.axis("off")
 
-        save_filename = f"{base_path}/{i + 1}h/{filename}.png"
+        base_path = f"{os.getcwd()}/{i + 1}h"
+        os.makedirs(base_path, exist_ok=True)
+        save_filename = f"{base_path}/{filename}.png"
         # save_filename = f"{base_path}/{filename}_{i + 1}h.png"
         # não pode ter nada no final do nome, para ter no começo tem que
         # alterar a busca no bucket na api
