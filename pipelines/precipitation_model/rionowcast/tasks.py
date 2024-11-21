@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from time import sleep
 from typing import List
+import pendulum  # pylint: disable=E0611, E0401
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -76,7 +77,7 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
     return dfr
 
 
-@task(nout=2)
+@task(nout=3)
 def calculate_start_and_end_date(
     hours_from_past: int = 6,
     end_historical_datetime: str = None,
@@ -96,7 +97,7 @@ def calculate_start_and_end_date(
         Number of hours to subtract from `end_historical_datetime_date` to determine the start
         datetime.
     end_historical_datetime_date : str, optional
-        The ending datetime as a string in the format 'yyyy-mm-dd hh:mm:ss'.
+        The ending datetime as a string in the format 'yyyy-mm-dd hh:mm:ss' in UTC timezone.
         If not provided, the current UTC time (`datetime.datetime.utcnow()`) is used as the default.
 
     Returns:
@@ -127,12 +128,21 @@ def calculate_start_and_end_date(
         except ValueError as e:
             raise ValueError(f"Invalid date format: {e}")
 
-    end_datetime = end_historical_datetime.replace(minute=0, second=0, microsecond=0)
-    start_datetime = end_datetime - datetime.timedelta(hours=hours_from_past)
+    end_datetime = pendulum.instance(end_historical_datetime).replace(
+        minute=0, second=0, microsecond=0
+    )
+    start_datetime = end_datetime.subtract(hours=hours_from_past)
 
-    print(f"Start datetime: {start_datetime}, End datetime: {end_datetime}")
+    # Ajustar para o fuso horário de Brasília
+    end_datetime_brasilia = end_datetime.in_timezone("America/Sao_Paulo")
 
-    return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"Start datetime in UTC: {start_datetime}, End datetime in UTC: {end_datetime}")
+
+    return (
+        start_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+        end_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+        end_datetime_brasilia.strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
 
 @task()

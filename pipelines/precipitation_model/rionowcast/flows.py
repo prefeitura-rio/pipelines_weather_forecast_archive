@@ -279,8 +279,8 @@ with Flow(
 
     api = access_api()
 
-    start_historical_datetime, end_historical_datetime = calculate_start_and_end_date(
-        hours_from_past, end_historical_datetime
+    start_historical_datetime, end_historical_datetime, end_historical_datetime_brasilia = (
+        calculate_start_and_end_date(hours_from_past, end_historical_datetime)
     )
 
     # Get data from pre-treated sources that were saved on gcp
@@ -350,7 +350,7 @@ with Flow(
     # #  Save image on GCP         #
     # ##############################
     # images_path_wb = create_image(geolocalized_prediction_datasets)
-    images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime)
+    images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime_brasilia)
     model_version_ = convert_parameter_to_type(model_version, str)
     destination_folder_wb = get_storage_destination(
         path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
