@@ -1,5 +1,6 @@
 # Folders that Git should ignore
 *.ipynb_checkpoints/
+pipelines/precipitation_model/impa/data/
 pipelines/precipitation_model/impa/models/data/
 pipelines/precipitation_model/impa/models/docs/
 pipelines/precipitation_model/impa/models/eval/
@@ -7,9 +8,15 @@ pipelines/precipitation_model/impa/models/models/
 pipelines/precipitation_model/impa/models/personal/
 pipelines/precipitation_model/impa/models/radar_cal/
 pipelines/precipitation_model/impa/models/lightning_logs/
-**/test_flow/** */
+pipelines/precipitation_model/rionowcast/gypscie/integrator/
+pipelines/precipitation_model/rionowcast/gypscie/processors/
+**/test_flow*
+**/gypscie/**
+**/test_flow/**
+*.nc
 
-# User-defined
+
+# user defined
 .replit
 replit.nix
 test_local.py
@@ -20,6 +27,7 @@ test/*.ipynb
 test/*.csv
 setup.py
 .vscode/*
+*.nc
 
 # File extensions that Git should ignore
 
@@ -44,7 +52,7 @@ setup.py
 *.Rdata
 *.Rds
 *.hdf
-**/gypscie/**
+
 
 # Python
 *.pyc
@@ -220,9 +228,3 @@ dmypy.json
 # MLflow
 **/mlruns/**
 *.csv
-**/gypscie/processors/**
-!/gypscie/**/MLproject
-!/gypscie/**/etl_alertario.py
-!/gypscie/**/conda.yaml
-/gypscie/utils/logging.py
-!/gypscie/processors/utils/*

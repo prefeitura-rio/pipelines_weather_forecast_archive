@@ -9,12 +9,14 @@ from pathlib import Path
 from typing import List, Union
 
 import pandas as pd
-import pendulum
-from google.cloud import storage
-from prefect import task
-from prefect.triggers import all_successful
-from prefeitura_rio.pipelines_utils.infisical import get_secret
-from prefeitura_rio.pipelines_utils.logging import log
+import pendulum  # pylint: disable=E0611, E0401
+from google.cloud import storage  # pylint: disable=E0611, E0401
+from prefect import task  # pylint: disable=E0611, E0401
+from prefect.triggers import all_successful  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import (
+    get_secret,  # pylint: disable=E0611, E0401
+)
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.pandas import (  # pylint: disable=E0611, E0401
     parse_date_columns,
     to_partitions,
@@ -23,7 +25,9 @@ from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611,
     get_redis_client,
 )
 
-from pipelines.utils import treat_redis_output  # get_redis_client_from_infisical,
+from pipelines.utils.utils_wf import (
+    treat_redis_output,  # get_redis_client_from_infisical,
+)
 
 # from redis_pal import RedisPal
 
@@ -191,16 +195,6 @@ def task_save_on_redis(
     log(f"Saved to Redis hash: {redis_hash}, key: {redis_key}, value: {values}")
 
 
-@task
-def get_storage_destination(path: str, filename: str = None) -> str:
-    """
-    Get storage blob destinationa and the name of the source file
-    """
-    destination_blob_name = f"{path}/{filename}" if filename else path
-    log(f"File destination_blob_name {destination_blob_name}")
-    return destination_blob_name
-
-
 # @task(nout=2)
 # def get_storage_destination(filename: str, path: str) -> Tuple[str, str]:
 #     """
@@ -211,6 +205,14 @@ def get_storage_destination(path: str, filename: str = None) -> str:
 #     log(f"File destination_blob_name {destination_blob_name}")
 #     log(f"File source_file_name {source_file_name}")
 #     return destination_blob_name, source_file_name
+@task
+def get_storage_destination(path: str, filename: str = None) -> str:
+    """
+    Get storage blob destinationa and the name of the source file
+    """
+    destination_blob_name = f"{path}/{filename}" if filename else path
+    log(f"File destination_blob_name {destination_blob_name}")
+    return destination_blob_name
 
 
 @task
@@ -294,7 +296,7 @@ def save_dataframe(
 
 @task
 def task_create_partitions(
-    data: pd.DataFrame,
+    data: Union[pd.DataFrame, str],
     partition_date_column: str,
     # partition_columns: List[str],
     savepath: str = "temp",
@@ -306,6 +308,8 @@ def task_create_partitions(
     """
     Create task for to_partitions
     """
+    if isinstance(data, str):
+        data = pd.read_csv(data) if data.endswith(".csv") else pd.read_parquet(data)
     data, partition_columns = parse_date_columns(data, partition_date_column)
     log(f"Created partition columns {partition_columns} and data first row now is {data.iloc[0]}")
     saved_files = to_partitions(
@@ -320,3 +324,11 @@ def task_create_partitions(
     log(f"Partition saved files {saved_files}")
     log(f"Returned path {savepath}, {type(savepath)}")
     return Path(savepath)
+
+
+@task
+def convert_parameter_to_type(parameter_, new_type):
+    """Function to convert model version from Parameter to type specified on new_type"""
+    print(f"Actual type of parameter {parameter_}: {type(parameter_)}")
+    print(f"New type {type(new_type(parameter_))}")
+    return new_type(parameter_)

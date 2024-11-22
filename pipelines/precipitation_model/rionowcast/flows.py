@@ -5,45 +5,57 @@
 Download meteorological data, treat then, integrate and predict
 """
 
-from prefect import Parameter, case
-from prefect.run_configs import KubernetesRun
-from prefect.storage import GCS
+from prefect import Parameter, case  # pylint: disable=E0611, E0401
+from prefect.run_configs import KubernetesRun  # pylint: disable=E0611, E0401
+from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+
+# pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
-    create_table_and_upload_to_gcs,
     get_now_datetime,
-    task_run_dbt_model_task,
 )
 
+# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;
+#     create_table_and_upload_to_gcs,
+#     task_run_dbt_model_task,
+# )
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401; task_wait_run,; get_prediction_on_gypscie,
-    access_api,
+from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     calculate_start_and_end_date,
     create_image,
-    desnormalize_data,
+    query_data_from_gcp,
+)
+from pipelines.tasks import (  # pylint: disable=E0611, E0401; task_create_partitions,
+    convert_parameter_to_type,
+    get_storage_destination,
+    upload_files_to_storage,
+)
+from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
+    access_api,
+    download_datasets_from_gypscie,
+    execute_dataflow_on_gypscie,
     execute_dataset_processor,
-    execute_prediction_on_gypscie,
-    geolocalize_data,
-    get_billing_project_id,
     get_dataflow_params,
     get_dataset_info,
+    get_dataset_name_on_gypscie,
     get_dataset_processor_info,
-    get_output_dataset_ids_on_gypscie,
-    query_data_from_gcp,
+    read_numpy_files,
     register_dataset_on_gypscie,
+    task_wait_run,
+    unzip_files,
 )
-from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
 
-# from pathlib import Path
+# get_billing_project_id, desnormalize_data,
+# geolocalize_data, path_to_dfr,
 
 
 with Flow(
@@ -63,27 +75,24 @@ with Flow(
 
     # Query parameters
     data_type = Parameter("data_type", default=None, required=False)
-    start_date = Parameter("start_date", default=None, required=False)
-    end_date = Parameter("end_date", default=None, required=False)
+    start_historical_datetime = Parameter("start_historical_datetime", default=None, required=False)
+    end_historical_datetime = Parameter("end_historical_datetime", default=None, required=False)
 
     # Gypscie parameters
     environment_id = Parameter("environment_id", default=1, required=False)
     domain_id = Parameter("domain_id", default=1, required=False)
     project_id = Parameter("project_id", default=1, required=False)
-    processor_name = Parameter("processor_name", default="etl_alertario22", required=True)
-    model_function_id = Parameter("model_function_id", default=18, required=False)
     project_name = Parameter("project_name", default="rionowcast_precipitation", required=False)
-    dataset_processor_id = Parameter("dataset_processor_id", default=43, required=False)
+
+    # Gypscie processor parameters
+    processor_name = Parameter("processor_name", default="etl_alertario22", required=True)
+    dataset_processor_id = Parameter("dataset_processor_id", default=43, required=False)  # mudar
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
     dataset_id = Parameter("dataset_id", default="clima_previsao_chuva", required=False)
-    table_id = Parameter(
-        "table_id",
-        default="modelo_pluviometro_alertario_radar_mendanha_rionowcast",
-        required=False,
-    )
+    table_id = Parameter("table_id", default="rionowcast", required=False)
 
     # Dataset parameters
     station_type = Parameter("station_type", default="pluviometro", required=False)
@@ -91,10 +100,11 @@ with Flow(
 
     # Dataset path, if it was saved on ETL flow or it will be None
     dataset_path = Parameter("dataset_path", default=None, required=False)  # dataset_path
+    model_version = Parameter("model_version", default=1, required=False)
 
-    #########################
-    #  Start flow           #
-    #########################
+    ####################################
+    #  Start preprocessing flow        #
+    ####################################
 
     api = access_api()
 
@@ -103,18 +113,19 @@ with Flow(
     # Get data from GCP if you don't have a path
     with case(dataset_path, None):
         with case(station_type, not "radar"):
-            billing_project_id = get_billing_project_id(bd_project_mode, billing_project_id)
+            # billing_project_id = get_billing_project_id(bd_project_mode, billing_project_id)
             dataset_path = query_data_from_gcp(
                 dataset_info["dataset_id"],
                 dataset_info["table_id"],
                 billing_project_id="rj-cor",
-                start_date=start_date,
-                end_date=end_date,
+                start_datetime=start_historical_datetime,
+                end_datetime=end_historical_datetime,
                 save_format="parquet",
             )
 
         with case(station_type, "radar"):
-            pass  # TODO: download data from storage
+            dataset_path = None
+            # TODO: download data from storage
 
     # Get processor information on gypscie
     with case(dataset_processor_id, None):
@@ -137,42 +148,42 @@ with Flow(
         project_id=project_id,
         parameters=processor_parameters,
     )
-    # task_wait_run(api, task_response, flow_type)
-    output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
-    # adicionar função de download do dataset
-    treated_datasets = None
-    # TODO: criar função para adicionar a coluna de update_date
-    # Save pre-treated data on local file with partitions
-    now_datetime = get_now_datetime()
-    prediction_data_path = task_create_partitions(
-        treated_datasets,
-        partition_date_column="data_update",  # TODO: change column name
-        # partition_columns=["ano_particao", "mes_particao", "data_particao"],
-        savepath="model_prediction",
-        suffix=now_datetime,
-    )
-    ##############################
-    #  Save predictions on GCP   #
-    ##############################
+    wait_run = task_wait_run(api, dataset_processor_task_id, flow_type="processor")
+    dataset_name = get_dataset_name_on_gypscie(api, wait_run["dataset_id"])
+    dataset_path = download_datasets_from_gypscie(api, dataset_names=[dataset_name], wait=wait_run)
+    # dfr_ = path_to_dfr(path=dataset_path)
+    # # output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
 
-    # Upload data to BigQuery
-    create_table = create_table_and_upload_to_gcs(
-        data_path=prediction_data_path,
-        dataset_id=dataset_id,
-        table_id=dataset_info["destination_table_id"],
-        dump_mode=dump_mode,
-        biglake_table=False,
-    )
+    # # Save pre-treated data on local file with partitions
+    # now_datetime = get_now_datetime()
+    # prediction_data_path = task_create_partitions(
+    #     dfr,
+    #     partition_date_column=dataset_info["partition_date_column"],
+    #     savepath="model_prediction",
+    #     suffix=now_datetime,
+    # )
+    # ################################
+    # #  Save preprocessing on GCP   #
+    # ################################
 
-    # Trigger DBT flow run
-    with case(materialize_after_dump, True):
-        run_dbt = task_run_dbt_model_task(
-            dataset_id=dataset_id,
-            table_id=dataset_info["destination_table_id"],
-            # mode=materialization_mode,
-            # materialize_to_datario=materialize_to_datario,
-        )
-        run_dbt.set_upstream(create_table)
+    # # Upload data to BigQuery
+    # create_table = create_table_and_upload_to_gcs(
+    #     data_path=prediction_data_path,
+    #     dataset_id=dataset_id,
+    #     table_id=table_id,
+    #     dump_mode=dump_mode,
+    #     biglake_table=False,
+    # )
+
+    # # Trigger DBT flow run
+    # with case(materialize_after_dump, True):
+    #     run_dbt = task_run_dbt_model_task(
+    #         dataset_id=dataset_id,
+    #         table_id=table_id,
+    #         # mode=materialization_mode,
+    #         # materialize_to_datario=materialize_to_datario,
+    #     )
+    #     run_dbt.set_upstream(create_table)
 
 ##############################
 #  Flow run parameters       #
@@ -206,24 +217,42 @@ with Flow(
     #########################
 
     # Model parameters
-    hours_from_past = Parameter("hours_from_past", required=True, default=6)
-    start_date = Parameter("start_date", default=None, required=False)
-    end_date = Parameter("end_date", default=None, required=False)
+    hours_from_past = Parameter("hours_from_past", required=False, default=6)
+    end_historical_datetime = Parameter("end_historical_datetime", default=None, required=False)
 
     # Gypscie parameters
     environment_id = Parameter("environment_id", default=1, required=False)
     domain_id = Parameter("domain_id", default=1, required=False)
     project_id = Parameter("project_id", default=1, required=False)
-    workflow_id = Parameter("workflow_id", default=36, required=False)
-    pre_processing_function_id = Parameter("pre_processing_function_id", default=43, required=False)
-    load_data_function_id = Parameter("load_data_function_id", default=42, required=False)
-    post_processing_function_id = Parameter(
-        "post_processing_function_id", default=18, required=False
-    )
-    model_id = Parameter("model_id", default=18, required=False)
-    # radar_data_id = Parameter("radar_data_id", default=178, required=False)
-    # rain_gauge_data_id = Parameter("rain_gauge_data_id", default=179, required=False)
-    grid_data_id = Parameter("grid_data_id", default=177, required=False)
+
+    # Gypscie functions and workflow parameters
+    workflow_id = Parameter("workflow_id", default=43, required=False)  # mudar.
+    load_data_function_id = Parameter("load_data_function_id", default=59, required=False)  # mudar
+    pre_processing_function_id = Parameter(
+        "pre_processing_function_id", default=60, required=False
+    )  # mudar.
+    model_function_id = Parameter(
+        "model_function_id",
+        default=61,
+        required=False,
+        # description="Id of the function of the model",
+    )  # mudar.
+
+    # Gypscie dataset parameters
+    model_data_id = Parameter(
+        "model_data_id",
+        default=191,
+        required=False,
+        # description="Id of the model saved as a dataset",
+    )  # mudar.
+    output_function_id = Parameter("output_function_id", default=62, required=False)  # mudar.
+    # radar_data_id = Parameter("radar_data_id", default=25, required=False)
+    # rain_gauge_data_id = Parameter("rain_gauge_data_id", default=22, required=False)
+    grid_data_id = Parameter(
+        "grid_data_id", default=177, required=False  # , description="Grid ID saved as a dataset"
+    )  # mudar.
+
+    model_version = Parameter("model_version", default=1, required=False)
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
@@ -250,30 +279,40 @@ with Flow(
 
     api = access_api()
 
-    with case(start_date, None):
-        start_date, end_date = calculate_start_and_end_date(hours_from_past)
+    (
+        start_historical_datetime,
+        end_historical_datetime,
+        end_historical_datetime_brasilia,
+    ) = calculate_start_and_end_date(hours_from_past, end_historical_datetime)
 
     # Get data from pre-treated sources that were saved on gcp
     pluviometer_alertario_path = query_data_from_gcp(
-        pluviometer_dataset_info["dataset_id"],
-        pluviometer_dataset_info["table_id"],
+        dataset_id="clima_previsao_chuva_staging",
+        table_id=pluviometer_dataset_info["table_id"],
         billing_project_id="rj-cor",
-        start_date=start_date,
-        end_date=end_date,
+        start_datetime=start_historical_datetime,
+        end_datetime=end_historical_datetime,
+        filename="rain_gauge",
         save_format="parquet",
     )
     radar_mendanha_path = query_data_from_gcp(
-        radar_dataset_info["dataset_id"],
-        radar_dataset_info["table_id"],
+        dataset_id="clima_previsao_chuva_staging",
+        table_id=radar_dataset_info["table_id"],
         billing_project_id="rj-cor",
-        start_date=start_date,
-        end_date=end_date,
+        start_datetime=start_historical_datetime,
+        end_datetime=end_historical_datetime,
+        filename="radar",
         save_format="parquet",
     )
 
     # Register these datasets on gypscie
-    radar_alertario_registered = register_dataset_on_gypscie(api, pluviometer_alertario_path)
-    radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path)
+    pluviometer_alertario_registered = register_dataset_on_gypscie(
+        api, pluviometer_alertario_path, domain_id
+    )  # noqa E501, C0301
+    radar_mendanha_registered = register_dataset_on_gypscie(api, radar_mendanha_path, domain_id)
+
+    # pluviometer_alertario_registered = {"id": 231}
+    # radar_mendanha_registered = {"id": 230}
 
     model_params = get_dataflow_params(
         workflow_id=workflow_id,
@@ -282,57 +321,91 @@ with Flow(
         load_data_funtion_id=load_data_function_id,
         pre_processing_function_id=pre_processing_function_id,
         model_function_id=model_function_id,
-        radar_data_id=radar_alertario_registered["id"],
+        radar_data_id=pluviometer_alertario_registered["id"],
         rain_gauge_data_id=radar_mendanha_registered["id"],
         grid_data_id=grid_data_id,
-        model_data_id=model_id,
+        model_data_id=model_data_id,
+        output_function_id=output_function_id,
     )
 
-    # Send dataset ids to gypscie to get predictions
-    task_id = execute_prediction_on_gypscie(
+    # Execute predictions
+    output_dataset_ids = execute_dataflow_on_gypscie(
         api,
         model_params,
     )
-    prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
-    # prediction_datasets = get_prediction_on_gypscie(api, prediction_dataset_ids)
-    prediction_datasets = None
-    desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
+    # prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
+    # wait_run = task_wait_run(api, task_id, flow_type="processor")  # new
+    dataset_names = get_dataset_name_on_gypscie(api, output_dataset_ids)  # new
+    ziped_dataset_paths = download_datasets_from_gypscie(api, dataset_names=dataset_names)
+    dataset_paths = unzip_files(ziped_dataset_paths)
+    prediction_datasets = read_numpy_files(dataset_paths)
     now_datetime = get_now_datetime()
-    geolocalized_prediction_datasets = geolocalize_data(
-        desnormalized_prediction_datasets, now_datetime
-    )
-    image_path = create_image(geolocalized_prediction_datasets)
-    # Save prediction on file
-    prediction_data_path = task_create_partitions(
-        geolocalized_prediction_datasets,
-        partition_date_column="data_predicao",  # TODO: change column name
-        # partition_columns=["ano_particao", "mes_particao", "data_particao"],
-        savepath="model_prediction",
-        suffix=now_datetime,
-    )
+    # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
+    # geolocalized_prediction_datasets = geolocalize_data(
+    #     desnormalized_prediction_datasets, now_datetime
+    # )
+    # dfr = add_caracterization_columns_on_dfr(
+    #     geolocalized_prediction_datasets, model_version, update_time=True
+    # )
 
-    ##############################
-    #  Save predictions on GCP   #
-    ##############################
-
-    # Upload data to BigQuery
-    create_table = create_table_and_upload_to_gcs(
-        data_path=prediction_data_path,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        dump_mode=dump_mode,
-        biglake_table=False,
+    # ##############################
+    # #  Save image on GCP         #
+    # ##############################
+    # images_path_wb = create_image(geolocalized_prediction_datasets)
+    images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime_brasilia)
+    model_version_ = convert_parameter_to_type(model_version, str)
+    destination_folder_wb = get_storage_destination(
+        path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
     )
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb + "/1h/without_background",
+        source_file_names=[images_path_wb[0]],
+    )
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb + "/2h/without_background",
+        source_file_names=[images_path_wb[1]],
+    )
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb + "/3h/without_background",
+        source_file_names=[images_path_wb[2]],
+    )
+    # ##############################
+    # #  Save predictions on GCP   #
+    # ##############################
 
-    # Trigger DBT flow run
-    with case(materialize_after_dump, True):
-        run_dbt = task_run_dbt_model_task(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            # mode=materialization_mode,
-            # materialize_to_datario=materialize_to_datario,
-        )
-        run_dbt.set_upstream(create_table)
+    # # Save prediction on file
+    # prediction_data_path = task_create_partitions(
+    #     dfr,
+    #     partition_date_column="data_predicao",  # TODO: change column name
+    #     # partition_columns=["ano_particao", "mes_particao", "data_particao"],
+    #     savepath="model_prediction",
+    #     suffix=now_datetime,
+    # )
+
+    # # Upload data to BigQuery
+    # create_table = create_table_and_upload_to_gcs(
+    #     data_path=prediction_data_path,
+    #     dataset_id=dataset_id,
+    #     table_id=table_id,
+    #     dump_mode=dump_mode,
+    #     biglake_table=False,
+    # )
+
+    # # Trigger DBT flow run
+    # with case(materialize_after_dump, True):
+    #     run_dbt = task_run_dbt_model_task(
+    #         dataset_id=dataset_id,
+    #         table_id=table_id,
+    #         # mode=materialization_mode,
+    #         # materialize_to_datario=materialize_to_datario,
+    #     )
+    #     run_dbt.set_upstream(create_table)
 
 
 ##############################

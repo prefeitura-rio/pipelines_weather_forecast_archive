@@ -6,18 +6,17 @@ import json
 from os import getenv
 from typing import Callable
 
-import basedosdados as bd
+import basedosdados as bd  # pylint: disable=E0611, E0401
 import pandas as pd
-import pendulum
-from google.cloud import storage
-from loguru import logger
+import pendulum  # pylint: disable=E0611, E0401
+from google.cloud import storage  # pylint: disable=E0611, E0401
+from loguru import logger  # pylint: disable=E0611, E0401
 
 # from redis_pal import RedisPal
 # import pipelines.constants
-from prefeitura_rio.pipelines_utils.infisical import (
-    get_secret,  # pylint: disable=E0611, E0401
-)
-from prefeitura_rio.pipelines_utils.logging import log
+# pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import get_secret
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
     get_redis_client,
 )
@@ -444,3 +443,41 @@ def download_blob(bucket_name, source_blob_name, destination_file_name) -> None:
     blob.download_to_filename(destination_file_name)
 
     print(f"Blob {source_blob_name} downloaded to file path {destination_file_name}. successfully ")
+
+
+# flake8: noqa: E722
+def return_prefect_parameter(prefect_parameter):
+    """Solve problems with prefect parameters returning then as string"""
+    text = str(prefect_parameter)
+    try:
+        text = "something" + text
+        text = text[9:]
+    except:
+        text = pd.DataFrame([text])
+        text = text.values[0][0]
+    return text
+
+
+def convert_dtypes(df, dtype_mapping):
+    """
+    Converts specified columns in a DataFrame to designated data types.
+
+    This function takes a DataFrame and a dictionary mapping column names to
+    desired data types. It applies these types to the corresponding columns
+    in the DataFrame to ensure consistency in data formats.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The DataFrame containing the data to be converted.
+    dtype_mapping : dict
+        A dictionary where keys are column names (str) and values are the
+        target data types (str) for each respective column.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The modified DataFrame with columns converted to the specified types.
+    """
+    applicable_dtypes = {col: dtype for col, dtype in dtype_mapping.items() if col in df.columns}
+    return df.astype(applicable_dtypes)

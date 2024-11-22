@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
 
-import basedosdados as bd
+import basedosdados as bd  # pylint: disable=E0611, E0401
 import requests
-from prefeitura_rio.pipelines_utils.logging import log
+import simplejson  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 
 class GypscieApi:
@@ -87,7 +88,10 @@ class GypscieApi:
         self._refresh_token_if_needed()
         response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
         response.raise_for_status()
-        return response.json()
+        try:
+            return response.json()
+        except simplejson.JSONDecodeError:
+            return response
 
     def put(self, path, json=None):
         """
