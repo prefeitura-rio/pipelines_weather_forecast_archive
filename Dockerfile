@@ -13,8 +13,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Atualiza o pip e o virtualenv
-RUN pip install --upgrade pip virtualenv setuptools wheel
+RUN pip install --upgrade setuptools wheel
+RUN pip install pysteps
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
