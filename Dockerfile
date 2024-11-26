@@ -7,9 +7,14 @@ FROM python:${PYTHON_VERSION}
 # Install git, gcc, build-essential, and other dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 build-essential gcc gdal-bin libgdal-dev libgeos-dev proj-bin proj-data && \
+    apt-get install -y --no-install-recommends \
+        git ffmpeg libsm6 libxext6 build-essential gcc \
+        gdal-bin libgdal-dev libgeos-dev proj-bin proj-data && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Atualiza o pip e o virtualenv
+RUN pip install --upgrade pip virtualenv setuptools wheel
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
