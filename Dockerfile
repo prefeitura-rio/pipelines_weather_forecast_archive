@@ -13,8 +13,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --upgrade setuptools==59.6.0 wheel==0.37.1 \
-    && pip install --no-cache-dir pysteps==1.7.4
+# RUN pip install --no-cache-dir --upgrade setuptools==59.6.0 wheel==0.37.1 \
+#     && pip install --no-cache-dir pysteps==1.7.4
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
@@ -24,7 +24,8 @@ ENV PREFECT_VERSION $PREFECT_VERSION
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
+RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION" \
+    && python3 -m pip install --no-cache-dir git+https://github.com/pySTEPS/pysteps@v1.7.4
 
 # Install requirements
 WORKDIR /app
