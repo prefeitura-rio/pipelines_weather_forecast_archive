@@ -13,8 +13,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade setuptools wheel
-RUN pip install pysteps
+RUN pip install --no-cache-dir --upgrade setuptools==59.6.0 wheel==0.37.1 \
+    && pip install --no-cache-dir pysteps==1.7.4
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
