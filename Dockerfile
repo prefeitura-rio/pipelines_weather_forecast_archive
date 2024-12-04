@@ -7,9 +7,7 @@ FROM python:${PYTHON_VERSION}
 # Install git, gcc, build-essential, and other dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        git ffmpeg libsm6 libxext6 build-essential gcc \
-        gdal-bin libgdal-dev libgeos-dev proj-bin proj-data && \
+    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 build-essential gcc gdal-bin libgdal-dev libgeos-dev proj-bin proj-data && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -23,10 +21,7 @@ RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
 
-# RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION" "setuptools==75.6.0" "wheel==0.45.1" \
-#     && python3 -m pip install --no-cache-dir git+https://github.com/pySTEPS/pysteps@v1.7.4
-
-    # Install requirements
+# Install requirements
 WORKDIR /app
 COPY . .
 RUN python3 -m pip install --prefer-binary --no-cache-dir -U .
