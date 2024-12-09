@@ -337,7 +337,10 @@ with Flow(
     dataset_paths = unzip_files(ziped_dataset_paths)
     prediction_datasets = read_numpy_files(dataset_paths)
     np_array_denormalized = denormalize_data(
-        np_array=prediction_datasets[0][0, 0], data_min=0, data_max=50, feature_range=(0, 1)
+        np_array=prediction_datasets[0][0, 0],
+        data_min=0,
+        data_max=81.770131684971,
+        feature_range=(0, 1),
     )
     geolocalized_df_ = geolocalize_data(
         denormalized_prediction_dataset=np_array_denormalized,
