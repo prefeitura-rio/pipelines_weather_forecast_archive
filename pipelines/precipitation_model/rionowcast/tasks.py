@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
-import seaborn as sns
+
+# import seaborn as sns
 from basedosdados import Base  # pylint: disable=E0611, E0401
 from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
@@ -417,6 +418,8 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     # Normalizar os valores para o intervalo [0, 1]
     norm = mcolors.Normalize(vmin=min(values), vmax=max(values))
 
+    dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
+
     predictions = ["1h_prediction", "2h_prediction", "3h_prediction"]
 
     image_path_list = []
@@ -424,8 +427,9 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         heatmap_data = dataframe.pivot(index="latitude", columns="longitude", values=prediction)
 
         # Plotting the heatmap
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(heatmap_data, cmap=cmap, norm=norm, cbar=False)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(heatmap_data, cmap=cmap, norm=norm, alpha=0.8, origin="upper")
+        # sns.heatmap(heatmap_data, cmap=cmap, norm=norm, cbar=False)
         plt.xlabel("")
         plt.ylabel("")
         plt.xticks(ticks=[], labels=[])
