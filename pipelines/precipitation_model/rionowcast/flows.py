@@ -55,9 +55,6 @@ from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     unzip_files,
 )
 
-# get_billing_project_id, desnormalize_data,
-# geolocalize_data, path_to_dfr,
-
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
@@ -343,7 +340,7 @@ with Flow(
     np_array_desnormalized = desnormalize(
         np_array=prediction_datasets, data_min=0, data_max=50, feature_range=(0, 1)
     )
-    geolocalized_df = geolocalize_data(
+    geolocalized_df_ = geolocalize_data(
         denormalized_prediction_dataset=np_array_desnormalized,
         min_lon=-43.89,
         min_lat=-23.13,
@@ -351,13 +348,13 @@ with Flow(
         max_lat=-22.65,
     )
     geolocalized_df = add_caracterization_columns_on_dfr(
-        geolocalized_df, model_version, reference_datetime=end_historical_datetime_brasilia
+        geolocalized_df_, model_version, reference_datetime=end_historical_datetime_brasilia
     )
 
     # ##############################
     # #  Save image on GCP         #
     # ##############################
-    images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime_brasilia)
+    images_path_wb = create_image(geolocalized_df, filename=end_historical_datetime_brasilia)
     model_version_ = convert_parameter_to_type(model_version, str)
     destination_folder_wb = get_storage_destination(
         path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
