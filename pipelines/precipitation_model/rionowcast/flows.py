@@ -279,9 +279,11 @@ with Flow(
 
     api = access_api()
 
-    start_historical_datetime, end_historical_datetime, end_historical_datetime_brasilia = (
-        calculate_start_and_end_date(hours_from_past, end_historical_datetime)
-    )
+    (
+        start_historical_datetime,
+        end_historical_datetime,
+        end_historical_datetime_brasilia,
+    ) = calculate_start_and_end_date(hours_from_past, end_historical_datetime)
 
     # Get data from pre-treated sources that were saved on gcp
     pluviometer_alertario_path = query_data_from_gcp(

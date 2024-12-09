@@ -8,10 +8,10 @@ import os
 from pathlib import Path
 from time import sleep
 from typing import List
-import pendulum  # pylint: disable=E0611, E0401
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import pendulum  # pylint: disable=E0611, E0401
 from basedosdados import Base  # pylint: disable=E0611, E0401
 from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
