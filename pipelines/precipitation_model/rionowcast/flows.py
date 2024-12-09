@@ -30,7 +30,6 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     add_caracterization_columns_on_dfr,
     calculate_start_and_end_date,
     create_image,
-    desnormalize,
     geolocalize_data,
     query_data_from_gcp,
 )
@@ -42,6 +41,7 @@ from pipelines.tasks import (  # pylint: disable=E0611, E0401;
 )
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     access_api,
+    denormalize_data,
     download_datasets_from_gypscie,
     execute_dataflow_on_gypscie,
     execute_dataset_processor,
@@ -337,11 +337,11 @@ with Flow(
     ziped_dataset_paths = download_datasets_from_gypscie(api, dataset_names=dataset_names)
     dataset_paths = unzip_files(ziped_dataset_paths)
     prediction_datasets = read_numpy_files(dataset_paths)
-    np_array_desnormalized = desnormalize(
-        np_array=prediction_datasets, data_min=0, data_max=50, feature_range=(0, 1)
+    np_array_denormalized = denormalize_data(
+        np_array=prediction_datasets[0], data_min=0, data_max=50, feature_range=(0, 1)
     )
     geolocalized_df_ = geolocalize_data(
-        denormalized_prediction_dataset=np_array_desnormalized,
+        denormalized_prediction_dataset=np_array_denormalized,
         min_lon=-43.89,
         min_lat=-23.13,
         max_lon=-43.04,

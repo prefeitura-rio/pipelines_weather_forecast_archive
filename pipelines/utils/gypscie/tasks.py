@@ -250,7 +250,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-    savepath = directory_path / f"{dataset_id}_{table_id}"  # TODO:
+    savepath = directory_path / f"{dataset_id}_{table_id}"
 
     # pylint: disable=consider-using-f-string
     # noqa E262
@@ -574,37 +574,8 @@ def read_numpy_files(file_paths: List[str]) -> List[np.ndarray]:
     for file_path in file_paths:
         array = np.load(file_path)
         arrays.append(array)
+    log(f"{len(arrays)} files imported")
     return arrays
-
-
-@task
-def desnormalize_data(array: np.ndarray):
-    """
-    Desnormalize data
-
-    Inputs:
-        array: numpy array
-    Returns:
-        a numpy array with the values desnormalized
-    """
-    return array
-
-
-@task
-def geolocalize_data(prediction_datasets: np.ndarray, now_datetime: str) -> pd.DataFrame:
-    """
-    Geolocalize data using grid and add timestamp
-
-    Inputs:
-        prediction_datasets: numpy array
-        now_datetime: string in format YYYY_MM_DD__H_M_S
-    Returns:
-        a pandas dataframe to be saved on GCP
-    Expected columns: latitude, longitude, janela_predicao,
-    valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
-    """
-    now_datetime = now_datetime + 1
-    return prediction_datasets
 
 
 @task
@@ -632,9 +603,9 @@ def get_dataset_info(station_type: str, source: str) -> Dict:
         }
         if source == "alertario":
             dataset_info["table_id"] = "meteorologia_alertario"
-            dataset_info[
-                "destination_table_id"
-            ] = "preprocessamento_estacao_meteorologica_alertario"
+            dataset_info["destination_table_id"] = (
+                "preprocessamento_estacao_meteorologica_alertario"
+            )
         elif source == "inmet":
             dataset_info["table_id"] = "meteorologia_inmet"
             dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
@@ -752,3 +723,67 @@ def rename_files(
         new_paths.append(savepath)
         print(f"Renamed file paths: {new_paths}")
     return new_paths
+
+
+@task
+def normalize_data(
+    np_array: np.array, data_min: float, data_max: float, feature_range=(0, 1)
+) -> np.array:
+    """
+    Normalize a numpy array using min-max normalization.
+
+    Parameters
+    ----------
+    np_array : np.array
+        Numpy array to be normalized
+    data_min : float
+        Minimum value in the data to scale from
+    data_max : float
+        Maximum value in the data to scale from
+    feature_range : tuple, optional
+        The desired (min, max) range to scale to, by default (0,1)
+
+    Returns
+    -------
+    np.array
+        Normalized numpy array with values scaled to feature_range
+    """
+    min_, max_ = feature_range
+    scale = (max_ - min_) / (data_max - data_min)
+    min_adjusted = min_ - data_min * scale
+    with np.nditer(np_array, op_flags=["readwrite"]) as iteration:
+        for data in iteration:
+            data[...] = data * scale + min_adjusted
+    return np_array
+
+
+@task
+def denormalize_data(
+    np_array: np.array, data_min: float, data_max: float, feature_range=(0, 1)
+) -> np.array:
+    """
+    Denormalize a numpy array by reversing min-max normalization.
+
+    Parameters
+    ----------
+    np_array : np.array
+        Normalized numpy array to be denormalized
+    data_min : float
+        Original minimum value in the data before normalization
+    data_max : float
+        Original maximum value in the data before normalization
+    feature_range : tuple, optional
+        The (min, max) scaling range used in the original normalization, by default (0,1)
+
+    Returns
+    -------
+    np.array
+        Denormalized numpy array with values scaled back to original range
+    """
+    min_, max_ = feature_range
+    scale = (max_ - min_) / (data_max - data_min)
+    min_adjusted = min_ - data_min * scale
+    with np.nditer(np_array, op_flags=["readwrite"]) as iteration:
+        for data in iteration:
+            data[...] = (data - min_adjusted) / scale
+    return np_array
