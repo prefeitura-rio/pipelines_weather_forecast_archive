@@ -55,7 +55,6 @@ from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     unzip_files,
 )
 
-
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
     state_handlers=[
