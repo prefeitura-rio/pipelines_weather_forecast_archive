@@ -9,9 +9,12 @@ from pathlib import Path
 from time import sleep
 from typing import List
 
+import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
+import seaborn as sns
 from basedosdados import Base  # pylint: disable=E0611, E0401
 from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
@@ -204,89 +207,241 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
 
 
 @task
-def create_image(data, filename) -> List:
+def normalize(
+    np_array: np.array, data_min: float, data_max: float, feature_range=(0, 1)
+) -> np.array:
     """
-    Create image using Geolocalized data or the numpy array from desnormalized_data function
-    Exemplo de código que usei pra gerar uma imagem vindo de um xarray:
+    Normalize a numpy array using min-max normalization.
 
-    def create_and_save_image(data: xr.xarray, variable) -> Path:
-        plt.figure(figsize=(10, 10))
+    Parameters
+    ----------
+    np_array : np.array
+        Numpy array to be normalized
+    data_min : float
+        Minimum value in the data to scale from
+    data_max : float
+        Maximum value in the data to scale from
+    feature_range : tuple, optional
+        The desired (min, max) range to scale to, by default (0,1)
 
-        # Use the Geostationary projection in cartopy
-        axis = plt.axes(projection=ccrs.PlateCarree())
-
-        lat_max, lon_max = (
-            -21.708288842894145,
-            -42.36573106186053,
-        )  # canto superior direito
-        lat_min, lon_min = (
-            -23.793855217170343,
-            -45.04488171189226,
-        )  # canto inferior esquerdo
-
-        extent = [lon_min, lat_min, lon_max, lat_max]
-        img_extent = [extent[0], extent[2], extent[1], extent[3]]
-
-        # Define the color scale based on the channel
-        colormap = "jet"  # White to black for IR channels
-
-        # Plot the image
-        img = axis.imshow(data, origin="upper", extent=img_extent, cmap=colormap, alpha=0.8)
-
-        # Add coastlines, borders and gridlines
-        axis.coastlines(resolution='10m', color='black', linewidth=0.8)
-        axis.add_feature(cartopy.feature.BORDERS, edgecolor='white', linewidth=0.5)
-
-
-        grdln = axis.gridlines(
-            crs=ccrs.PlateCarree(),
-            color="gray",
-            alpha=0.7,
-            linestyle="--",
-            linewidth=0.7,
-            xlocs=np.arange(-180, 180, 1),
-            ylocs=np.arange(-90, 90, 1),
-            draw_labels=True,
-        )
-        grdln.top_labels = False
-        grdln.right_labels = False
-
-        plt.colorbar(
-            img,
-            label=variable.upper(),
-            extend="both",
-            orientation="horizontal",
-            pad=0.05,
-            fraction=0.05,
-        )
-
-        output_image_path = Path(os.getcwd()) / "output" / "images"
-
-        save_image_path = output_image_path / (f"{variable}.png")
-
-        if not output_image_path.exists():
-            output_image_path.mkdir(parents=True, exist_ok=True)
-
-        plt.savefig(save_image_path, bbox_inches="tight", pad_inches=0, dpi=300)
-        plt.show()
-        return save_image_path
+    Returns
+    -------
+    np.array
+        Normalized numpy array with values scaled to feature_range
     """
-    save_images_path = []
-    images = data[0][0, 0]
-    for i in range(3):
-        plt.imshow(images[i], cmap="viridis")
-        plt.axis("off")
+    min_, max_ = feature_range
+    scale = (max_ - min_) / (data_max - data_min)
+    min_adjusted = min_ - data_min * scale
+    with np.nditer(np_array, op_flags=["readwrite"]) as iteration:
+        for data in iteration:
+            data[...] = data * scale + min_adjusted
+    return np_array
 
-        base_path = f"{os.getcwd()}/{i + 1}h"
-        os.makedirs(base_path, exist_ok=True)
-        save_filename = f"{base_path}/{filename}.png"
-        # save_filename = f"{base_path}/{filename}_{i + 1}h.png"
+
+@task
+def desnormalize(
+    np_array: np.array, data_min: float, data_max: float, feature_range=(0, 1)
+) -> np.array:
+    """
+    Denormalize a numpy array by reversing min-max normalization.
+
+    Parameters
+    ----------
+    np_array : np.array
+        Normalized numpy array to be denormalized
+    data_min : float
+        Original minimum value in the data before normalization
+    data_max : float
+        Original maximum value in the data before normalization
+    feature_range : tuple, optional
+        The (min, max) scaling range used in the original normalization, by default (0,1)
+
+    Returns
+    -------
+    np.array
+        Denormalized numpy array with values scaled back to original range
+    """
+    min_, max_ = feature_range
+    scale = (max_ - min_) / (data_max - data_min)
+    min_adjusted = min_ - data_min * scale
+    with np.nditer(np_array, op_flags=["readwrite"]) as iteration:
+        for data in iteration:
+            data[...] = (data - min_adjusted) / scale
+    return np_array
+
+
+@task
+def geolocalize_data(
+    denormalized_prediction_dataset: np.array,
+    min_lon: float,
+    min_lat: float,
+    max_lon: float,
+    max_lat: float,
+) -> pd.DataFrame:
+    """
+    Geolocalize the denormalized prediction data by mapping array indices to lat/lon coordinates.
+
+    Parameters
+    ----------
+    denormalized_prediction_dataset : np.array
+        3D numpy array containing denormalized prediction data with shape (3, height, width)
+        representing predictions for 1h, 2h and 3h ahead
+    min_lon : float
+        Minimum longitude value for the prediction grid
+    min_lat : float
+        Minimum latitude value for the prediction grid
+    max_lon : float
+        Maximum longitude value for the prediction grid
+    max_lat : float
+        Maximum latitude value for the prediction grid
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the geolocalized predictions with columns:
+        - latitude: Latitude coordinate for each prediction point
+        - longitude: Longitude coordinate for each prediction point
+        - 1h_prediction: Predicted value 1 hour ahead
+        - 2h_prediction: Predicted value 2 hours ahead
+        - 3h_prediction: Predicted value 3 hours ahead
+    """
+    column_names = ["latitude", "longitude", "1h_prediction", "2h_prediction", "3h_prediction"]
+    geolocalized_df = pd.DataFrame(columns=column_names)
+
+    dataset_shape = denormalized_prediction_dataset.shape
+
+    lat_scale = (max_lat - min_lat) / dataset_shape[0]
+    lon_scale = (max_lon - min_lon) / dataset_shape[1]
+    for i, j in np.ndindex(
+        denormalized_prediction_dataset.shape[1], denormalized_prediction_dataset.shape[2]
+    ):
+
+        row = {
+            "latitude": (i + 1) * lat_scale + min_lat,
+            "longitude": (j + 1) * lon_scale + min_lon,
+            "1h_prediction": denormalized_prediction_dataset[0, i, j],
+            "2h_prediction": denormalized_prediction_dataset[1, i, j],
+            "3h_prediction": denormalized_prediction_dataset[2, i, j],
+        }
+
+        geolocalized_df = pd.concat([geolocalized_df, pd.DataFrame([row])], ignore_index=True)
+
+    return geolocalized_df
+
+
+@task
+def add_caracterization_columns_on_dfr(
+    geolocalized_df: pd.DataFrame, model_version, reference_datetime: str
+) -> pd.DataFrame:
+    """
+    Add model version and reference datetime columns to the geolocalized dataframe.
+
+    Parameters
+    ----------
+    geolocalized_df : pd.DataFrame
+        DataFrame containing the geolocalized prediction data
+    model_version : int or str
+        Version number of the model used for predictions
+    reference_datetime : str
+        Reference datetime for the predictions in format 'YYYY-MM-DD HH:mm:ss'
+
+    Returns
+    -------
+    pd.DataFrame
+        Input dataframe with added model_version and reference_datetime columns
+    """
+    geolocalized_df["model_version"] = model_version
+    geolocalized_df["reference_datetime"] = reference_datetime
+    return geolocalized_df
+
+
+@task
+def create_image(dataframe: pd.DataFrame, filename: str) -> List:
+    """
+    Create heatmap visualizations of precipitation predictions.
+
+    Takes a DataFrame containing geolocalized precipitation predictions and generates heatmap
+    visualizations for 1-hour, 2-hour and 3-hour predictions using a custom color scheme.
+    The heatmaps are saved as image files in prediction-specific subdirectories.
+
+    Parameters
+    ----------
+    dataframe : pd.DataFrame
+        DataFrame containing the geolocalized prediction data with columns:
+        - latitude: Latitude coordinates
+        - longitude: Longitude coordinates
+        - 1h_prediction: 1-hour precipitation predictions
+        - 2h_prediction: 2-hour precipitation predictions
+        - 3h_prediction: 3-hour precipitation predictions
+    filename : str
+        Base filename to use when saving the generated images
+
+    Returns
+    -------
+    List[str]
+        List of paths to the saved heatmap image files
+
+    Notes
+    -----
+    Uses a custom color scheme based on precipitation intensity levels from AlertaRio.
+    Creates separate subdirectories for 1h, 2h and 3h prediction images.
+    """
+
+    alertario_precipitation_colors = [
+        {"value": 0, "color": None},  # Nenhuma cor para o valor 0
+        {"value": 0.02, "color": "#63bbff"},
+        {"value": 5, "color": "#97d2ff"},
+        {"value": 10, "color": "#c9eb80"},
+        {"value": 15, "color": "#eeee00"},
+        {"value": 20, "color": "#ffd163"},
+        {"value": 25, "color": "#ffaf32"},
+        {"value": 30, "color": "#ff9900"},
+        {"value": 35, "color": "#f57000"},
+        {"value": 40, "color": "#ee5500"},
+        {"value": 45, "color": "#ee2a00"},
+        {"value": 50, "color": "#ee0000"},
+    ]
+
+    # Filtrar cores que não são None
+    filtered_colors = [
+        (entry["value"], entry["color"])
+        for entry in alertario_precipitation_colors
+        if entry["color"] is not None
+    ]
+
+    values, colors = zip(*filtered_colors)
+
+    # Criar uma colormap usando as cores selecionadas
+    cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
+
+    # Normalizar os valores para o intervalo [0, 1]
+    norm = mcolors.Normalize(vmin=min(values), vmax=max(values))
+
+    predictions = ["1h_prediction", "2h_prediction", "3h_prediction"]
+
+    image_path_list = []
+    for prediction in predictions:
+        heatmap_data = dataframe.pivot(index="latitude", columns="longitude", values=prediction)
+
+        # Plotting the heatmap
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(heatmap_data, cmap=cmap, norm=norm, cbar=False)
+        plt.xlabel("")
+        plt.ylabel("")
+        plt.xticks(ticks=[], labels=[])
+        plt.yticks(ticks=[], labels=[])
+
         # não pode ter nada no final do nome, para ter no começo tem que
         # alterar a busca no bucket na api
-        plt.savefig(save_filename, bbox_inches="tight")
-        save_images_path.append(save_filename)
-        log(f"Imagem {i + 1} salva como {save_filename}")
-        plt.close()
-    log(f"Images saved on {save_images_path}")
-    log(os.listdir("./"))
-    return save_images_path
+        directory_path = "prediction_images/" + prediction
+
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
+        image_path = f"{directory_path}/{filename}.png"
+        plt.savefig(image_path, bbox_inches="tight", pad_inches=0.1, dpi=80, transparent=True)
+        # plt.show()
+        image_path_list.append(image_path)
+
+    image_path_list.sort()
+    return image_path_list
