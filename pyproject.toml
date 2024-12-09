@@ -25,13 +25,14 @@ netcdf4 = "^1.7.1.post2"
 numpy = "<2"
 opencv-python-headless = "^4.10.0.84"
 plotly = "^5.9.0"
+prefect = "1.4.1"
 prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio.git", rev = "2f6a5b9cfae4e214e694346a87c3ffbbe0954a70", branch = "feat/reimplement-templates", extras = [
   "pipelines",
   "pipelines-templates",
 ] }
 pyarrow = "^17.0.0"
 pyproj = "^3.4.0"
-pysteps = "^1.7.4"
+# pysteps = "^1.7.4"  # removes
 pytorch-lightning = "^2.1.1"
 satpy = "^0.43.0"
 termcolor = "^2.4.0"
@@ -55,6 +56,8 @@ black = "^23.7.0"
 flake8 = "^6.1.0"
 pre-commit = "^3.3.3"
 taskipy = "^1.12.0"
+setuptools = "75.6.0"
+wheel = "0.45.1"
 
 [tool.poetry.group.ci]
 optional = true
