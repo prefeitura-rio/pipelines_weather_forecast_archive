@@ -21,6 +21,7 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
     create_table_and_upload_to_gcs,
     task_run_dbt_model_task,
 )
+
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,

@@ -9,9 +9,9 @@ from pathlib import Path
 from time import sleep
 from typing import List
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
 import seaborn as sns
