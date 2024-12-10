@@ -18,11 +18,12 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_inject_bd_credentials,
 )
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;
-    create_table_and_upload_to_gcs,
+    # create_table_and_upload_to_gcs,
     task_run_dbt_model_task,
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
+from pipelines.tasks import create_table_and_upload_to_gcs
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
@@ -397,6 +398,7 @@ with Flow(
         data_path=prediction_data_path,
         dataset_id=dataset_id,
         table_id=table_id,
+        bucket_name="rj-cor",
         dump_mode=dump_mode,
         biglake_table=False,
     )

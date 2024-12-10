@@ -780,10 +780,12 @@ def denormalize_data(
     np.array
         Denormalized numpy array with values scaled back to original range
     """
+    log(f"Min and max values before denormalization: {np.min(np_array)}, {np.max(np_array)}")
     min_, max_ = feature_range
     scale = (max_ - min_) / (data_max - data_min)
     min_adjusted = min_ - data_min * scale
     with np.nditer(np_array, op_flags=["readwrite"]) as iteration:
         for data in iteration:
             data[...] = (data - min_adjusted) / scale
+    log(f"Min and max values after denormalization: {np.min(np_array)}, {np.max(np_array)}")
     return np_array
