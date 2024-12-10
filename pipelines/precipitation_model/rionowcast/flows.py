@@ -17,13 +17,11 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
-from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;
-    # create_table_and_upload_to_gcs,
+from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,
     task_run_dbt_model_task,
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.tasks import create_table_and_upload_to_gcs
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
@@ -36,6 +34,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401;
     convert_parameter_to_type,
+    create_table_and_upload_to_gcs,
     get_storage_destination,
     task_create_partitions,
     upload_files_to_storage,

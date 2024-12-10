@@ -4,8 +4,8 @@
 Common  Tasks for rj-cor
 """
 
-from datetime import timedelta
 import json
+from datetime import timedelta
 from pathlib import Path
 from typing import List, Union
 
@@ -16,15 +16,14 @@ from google.cloud import storage  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefect.triggers import all_successful  # pylint: disable=E0611, E0401
 from prefeitura_rio.core import settings  # pylint: disable=E0611, E0401
-  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.infisical import (
-    get_secret,
-)
+
+# pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.pandas import (  # pylint: disable=E0611, E0401
+    dump_header_to_file,
     parse_date_columns,
     to_partitions,
-    dump_header_to_file,
 )
 from prefeitura_rio.pipelines_utils.redis_pal import (  # pylint: disable=E0611, E0401
     get_redis_client,
