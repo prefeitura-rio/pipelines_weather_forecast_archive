@@ -195,7 +195,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
         "altitude": "int64",
         "horizontal_reflectivity_mean": "float64",
     }
-
+    dfr = convert_dtypes(dfr, dtype_mapping)
     if "horizontal_reflectivity_mean" in dfr.columns:
         min_val = dfr["horizontal_reflectivity_mean"].min()
         max_val = dfr["horizontal_reflectivity_mean"].max()
@@ -203,8 +203,9 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
             max_val - min_val
         )
     # TODO: remove normalization after rionowcast finish preprocessing fixes
+    log(f"df from {table_id}: {dfr.iloc[0]}")
+    log(f"dtypes from {table_id}: {dfr.dtypes}")
 
-    dfr = convert_dtypes(dfr, dtype_mapping)
     if save_format == "csv":
         dfr.to_csv(savepath, index=False)
     elif save_format == "parquet":
