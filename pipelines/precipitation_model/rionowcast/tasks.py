@@ -196,6 +196,14 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
         "horizontal_reflectivity_mean": "float64",
     }
 
+    if "horizontal_reflectivity_mean" in dfr.columns:
+        min_val = dfr["horizontal_reflectivity_mean"].min()
+        max_val = dfr["horizontal_reflectivity_mean"].max()
+        dfr["horizontal_reflectivity_mean"] = (dfr["horizontal_reflectivity_mean"] - min_val) / (
+            max_val - min_val
+        )
+    # TODO: remove normalization after rionowcast finish preprocessing fixes
+
     dfr = convert_dtypes(dfr, dtype_mapping)
     if save_format == "csv":
         dfr.to_csv(savepath, index=False)

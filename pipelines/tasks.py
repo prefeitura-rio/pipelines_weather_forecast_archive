@@ -16,7 +16,8 @@ from google.cloud import storage  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefect.triggers import all_successful  # pylint: disable=E0611, E0401
 from prefeitura_rio.core import settings  # pylint: disable=E0611, E0401
-  # pylint: disable=E0611, E0401
+
+# pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.infisical import (
     get_secret,
 )
@@ -360,6 +361,7 @@ def create_table_and_upload_to_gcs(
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
     table_staging = f"{tb.table_full_name['staging']}"
     # pylint: disable=C0103
+    log("DEGUB: before st")
     st = bd.Storage(dataset_id=dataset_id, table_id=table_id)
     bucket_name = bucket_name if bucket_name else st.bucket_name
     storage_path = f"{bucket_name}.staging.{dataset_id}.{table_id}"
@@ -367,6 +369,7 @@ def create_table_and_upload_to_gcs(
         f"https://console.cloud.google.com/storage/browser/{bucket_name}"
         f"/staging/{dataset_id}/{table_id}"
     )
+    log(f"Storage path link: {storage_path_link}")
 
     # prod datasets is public if the project is datario. staging are private im both projects
     dataset_is_public = tb.client["bigquery_prod"].project == "datario"
@@ -401,7 +404,7 @@ def create_table_and_upload_to_gcs(
                 f"{storage_path_link}"
             )  # pylint: disable=C0301
 
-            st.delete_table(mode="staging", bucket_name=st.bucket_name, not_found_ok=True)
+            st.delete_table(mode="staging", bucket_name=bucket_name, not_found_ok=True)
             log(
                 "MODE APPEND: Sucessfully REMOVED HEADER DATA from Storage:\n"
                 f"{storage_path}\n"
@@ -414,7 +417,7 @@ def create_table_and_upload_to_gcs(
                 f"{storage_path}\n"
                 f"{storage_path_link}"
             )  # pylint: disable=C0301
-            st.delete_table(mode="staging", bucket_name=st.bucket_name, not_found_ok=True)
+            st.delete_table(mode="staging", bucket_name=bucket_name, not_found_ok=True)
             log(
                 "MODE OVERWRITE: Sucessfully DELETED OLD DATA from Storage:\n"
                 f"{storage_path}\n"
@@ -446,7 +449,7 @@ def create_table_and_upload_to_gcs(
             f"{storage_path_link}"
         )
 
-        st.delete_table(mode="staging", bucket_name=st.bucket_name, not_found_ok=True)
+        st.delete_table(mode="staging", bucket_name=bucket_name, not_found_ok=True)
         log(
             f"MODE OVERWRITE: Sucessfully REMOVED HEADER DATA from Storage\n:"
             f"{storage_path}\n"

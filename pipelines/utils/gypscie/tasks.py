@@ -574,6 +574,7 @@ def read_numpy_files(file_paths: List[str]) -> List[np.ndarray]:
     for file_path in file_paths:
         array = np.load(file_path)
         arrays.append(array)
+        log(f"Min and max values after import:  {np.min(array)}, {np.max(array)}")
     log(f"{len(arrays)} files imported")
     return arrays
 
