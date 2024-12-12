@@ -205,10 +205,6 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
         dfr["horizontal_reflectivity_mean"] = (dfr["horizontal_reflectivity_mean"] - min_val) / (
             max_val - min_val
         )
-
-    min_val = dfr["horizontal_reflectivity_mean"].min()
-    max_val = dfr["horizontal_reflectivity_mean"].max()
-    log(f"Min and max values {min_val}, {max_val}")
     # TODO: remove normalization after rionowcast finish preprocessing fixes
 
     log(f"df from {table_id}: {dfr.iloc[0]}")
