@@ -18,10 +18,6 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_inject_bd_credentials,
 )
 
-# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,
-#     task_run_dbt_model_task,
-# )
-
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
@@ -33,11 +29,9 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     geolocalize_data,
     query_data_from_gcp,
 )
-from pipelines.tasks import (  # pylint: disable=E0611, E0401;
+from pipelines.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,; task_create_partitions,
     convert_parameter_to_type,
-    # create_table_and_upload_to_gcs,
     get_storage_destination,
-    # task_create_partitions,
     upload_files_to_storage,
 )
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
@@ -55,6 +49,11 @@ from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     task_wait_run,
     unzip_files,
 )
+
+# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,
+#     task_run_dbt_model_task,
+# )
+
 
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
