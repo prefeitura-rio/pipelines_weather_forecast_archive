@@ -230,6 +230,7 @@ def geolocalize_data(
 ) -> pd.DataFrame:
     """
     Geolocalize the denormalized prediction data by mapping array indices to lat/lon coordinates.
+    Any value less then 0.02 will be set to zero. (confirm this)
 
     Parameters
     ----------
@@ -255,6 +256,8 @@ def geolocalize_data(
         - 2h_prediction: Predicted value 2 hours ahead
         - 3h_prediction: Predicted value 3 hours ahead
     """
+    denormalized_prediction_dataset[denormalized_prediction_dataset < 0.2] = 0
+
     column_names = ["latitude", "longitude", "1h_prediction", "2h_prediction", "3h_prediction"]
     geolocalized_df = pd.DataFrame(columns=column_names)
 
@@ -339,18 +342,26 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     """
 
     alertario_precipitation_colors = [
-        {"value": 0, "color": None},  # Nenhuma cor para o valor 0
+        {"value": 0, "color": "#eeeee4"},  # Nenhuma cor para o valor 0
         {"value": 0.02, "color": "#63bbff"},
-        {"value": 5, "color": "#97d2ff"},
-        {"value": 10, "color": "#c9eb80"},
-        {"value": 15, "color": "#eeee00"},
+        {"value": 5, "color": "#91ccab"},
+        {"value": 10, "color": "#bfdd56"},
+        {"value": 15, "color": "#eeee01"},
         {"value": 20, "color": "#ffd163"},
-        {"value": 25, "color": "#ffaf32"},
-        {"value": 30, "color": "#ff9900"},
+        {"value": 25, "color": "#ffb421"},
+        {"value": 30, "color": "#ff9700"},
         {"value": 35, "color": "#f57000"},
         {"value": 40, "color": "#ee5500"},
         {"value": 45, "color": "#ee2a00"},
-        {"value": 50, "color": "#ee0000"},
+        {"value": 50, "color": "#ED0000"},
+        {"value": 55, "color": "#d40000"},
+        {"value": 60, "color": "#bc0000"},
+        {"value": 65, "color": "#a30000"},
+        {"value": 70, "color": "#8A0000"},
+        {"value": 75, "color": "#6e0000"},
+        {"value": 80, "color": "#530000"},
+        {"value": 85, "color": "#380000"},
+        {"value": 90, "color": "#1C0000"},
     ]
 
     # Filtrar cores que não são None
@@ -364,11 +375,15 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
 
     # Criar uma colormap usando as cores selecionadas
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
+    values = list(values)
+    values.sort()
+    norm = mcolors.Normalize(vmin=values[0], vmax=values[-1])
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
     predictions = ["1h_prediction", "2h_prediction", "3h_prediction"]
     dataframe[predictions] = dataframe[predictions].astype(float)
+    # dataframe[predictions] = dataframe[predictions].replace(0, np.nan)
 
     image_path_list = []
     for prediction in predictions:
@@ -379,7 +394,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
 
         # Plotting the heatmap
         plt.figure(figsize=(10, 10))
-        plt.imshow(heatmap_data, cmap=cmap)
+        plt.imshow(heatmap_data, cmap=cmap, norm=norm)
         # sns.heatmap(heatmap_data, cmap=cmap, norm=norm, cbar=False)
         plt.xlabel("")
         plt.ylabel("")

@@ -17,9 +17,10 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
-from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,
-    task_run_dbt_model_task,
-)
+
+# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,
+#     task_run_dbt_model_task,
+# )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
@@ -34,9 +35,9 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401;
     convert_parameter_to_type,
-    create_table_and_upload_to_gcs,
+    # create_table_and_upload_to_gcs,
     get_storage_destination,
-    task_create_partitions,
+    # task_create_partitions,
     upload_files_to_storage,
 )
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
@@ -385,32 +386,32 @@ with Flow(
     # #  Save predictions on GCP   #
     # ##############################
 
-    # Save prediction on file
-    prediction_data_path = task_create_partitions(
-        geolocalized_df,
-        partition_date_column="reference_datetime",
-        # partition_columns=["ano_particao", "mes_particao", "data_particao"],
-        savepath="model_prediction",
-        suffix=end_historical_datetime_brasilia,
-    )
+    # # Save prediction on file
+    # prediction_data_path = task_create_partitions(
+    #     geolocalized_df,
+    #     partition_date_column="reference_datetime",
+    #     # partition_columns=["ano_particao", "mes_particao", "data_particao"],
+    #     savepath="model_prediction",
+    #     suffix=end_historical_datetime_brasilia,
+    # )
 
-    # Upload data to BigQuery
-    create_table = create_table_and_upload_to_gcs(
-        data_path=prediction_data_path,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        bucket_name="rj-cor",
-        dump_mode=dump_mode,
-        biglake_table=False,
-    )
+    # # Upload data to BigQuery
+    # create_table = create_table_and_upload_to_gcs(
+    #     data_path=prediction_data_path,
+    #     dataset_id=dataset_id,
+    #     table_id=table_id,
+    #     bucket_name="rj-cor",
+    #     dump_mode=dump_mode,
+    #     biglake_table=False,
+    # )
 
-    # Trigger DBT flow run
-    with case(materialize_after_dump, True):
-        run_dbt = task_run_dbt_model_task(
-            dataset_id=dataset_id,
-            table_id=table_id,
-        )
-        run_dbt.set_upstream(create_table)
+    # # Trigger DBT flow run
+    # with case(materialize_after_dump, True):
+    #     run_dbt = task_run_dbt_model_task(
+    #         dataset_id=dataset_id,
+    #         table_id=table_id,
+    #     )
+    #     run_dbt.set_upstream(create_table)
 
 
 ##############################
