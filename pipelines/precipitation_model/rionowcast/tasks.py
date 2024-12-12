@@ -158,6 +158,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     end_datetime: str = None,
     filename: str = "data",
     save_format: str = "csv",
+    renormalization: bool = True,
 ) -> Path:
     """
     Download historical data from source.
@@ -196,13 +197,20 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
         "horizontal_reflectivity_mean": "float64",
     }
     dfr = convert_dtypes(dfr, dtype_mapping)
-    if "horizontal_reflectivity_mean" in dfr.columns:
+    log(f"Shape of dataset before renormalization: {dfr.shape}")
+    if "horizontal_reflectivity_mean" in dfr.columns and renormalization:
         min_val = dfr["horizontal_reflectivity_mean"].min()
         max_val = dfr["horizontal_reflectivity_mean"].max()
+        log(f"Min and max values before renormalization {min_val}, {max_val}")
         dfr["horizontal_reflectivity_mean"] = (dfr["horizontal_reflectivity_mean"] - min_val) / (
             max_val - min_val
         )
+
+    min_val = dfr["horizontal_reflectivity_mean"].min()
+    max_val = dfr["horizontal_reflectivity_mean"].max()
+    log(f"Min and max values {min_val}, {max_val}")
     # TODO: remove normalization after rionowcast finish preprocessing fixes
+
     log(f"df from {table_id}: {dfr.iloc[0]}")
     log(f"dtypes from {table_id}: {dfr.dtypes}")
 
@@ -255,15 +263,16 @@ def geolocalize_data(
     geolocalized_df = pd.DataFrame(columns=column_names)
 
     dataset_shape = denormalized_prediction_dataset.shape
+    log(f"dataset_shape in geolocalize data: {dataset_shape}")
 
-    lat_scale = (max_lat - min_lat) / dataset_shape[0]
-    lon_scale = (max_lon - min_lon) / dataset_shape[1]
+    lat_scale = (max_lat - min_lat) / dataset_shape[1]
+    lon_scale = (max_lon - min_lon) / dataset_shape[2]
     for i, j in np.ndindex(
         denormalized_prediction_dataset.shape[1], denormalized_prediction_dataset.shape[2]
     ):
 
         row = {
-            "latitude": (i + 1) * lat_scale + min_lat,
+            "latitude": -(i + 1) * lat_scale + max_lat,
             "longitude": (j + 1) * lon_scale + min_lon,
             "1h_prediction": denormalized_prediction_dataset[0, i, j],
             "2h_prediction": denormalized_prediction_dataset[1, i, j],
@@ -360,20 +369,21 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     # Criar uma colormap usando as cores selecionadas
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
 
-    # Normalizar os valores para o intervalo [0, 1]
-    norm = mcolors.Normalize(vmin=min(values), vmax=max(values))
-
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
     predictions = ["1h_prediction", "2h_prediction", "3h_prediction"]
+    dataframe[predictions] = dataframe[predictions].astype(float)
 
     image_path_list = []
     for prediction in predictions:
-        heatmap_data = dataframe.pivot(index="latitude", columns="longitude", values=prediction)
+        heatmap_data = dataframe.pivot(
+            index="latitude", columns="longitude", values=prediction
+        ).sort_index(ascending=False)
+        log(heatmap_data.iloc[:5, :5])
 
         # Plotting the heatmap
         plt.figure(figsize=(10, 10))
-        plt.imshow(heatmap_data, cmap=cmap, norm=norm, alpha=0.8, origin="upper")
+        plt.imshow(heatmap_data, cmap=cmap)
         # sns.heatmap(heatmap_data, cmap=cmap, norm=norm, cbar=False)
         plt.xlabel("")
         plt.ylabel("")

@@ -99,6 +99,7 @@ with Flow(
     dataset_path = Parameter("dataset_path", default=None, required=False)  # dataset_path
     model_version = Parameter("model_version", default=1, required=False)
 
+    renormalization = Parameter("renormalization", default=True, required=False)
     ####################################
     #  Start preprocessing flow        #
     ####################################
@@ -300,6 +301,7 @@ with Flow(
         end_datetime=end_historical_datetime,
         filename="radar",
         save_format="parquet",
+        renormalization=renormalization,
     )
 
     # Register these datasets on gypscie
