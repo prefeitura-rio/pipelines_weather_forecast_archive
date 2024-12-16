@@ -389,7 +389,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     values, colors = zip(*filtered_colors)
     vmin, vmax = min(values), max(values)
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
-    cmap.set_under("#ffffff")
+    cmap.set_under("#FFFFFF00")
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
     # norm = CustomNormalize(vmin=vmin, vmax=vmax)def create_image(dataframe: pd.DataFrame, filename: str) -> List:
@@ -414,7 +414,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         log(f"Max value: {np.max(heatmap_data)}")
         log(f"nan count: {nan_count}, shape {heatmap_data.size}")
 
-        interpolation = "spline36"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
+        interpolation = "catrom"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
         plt.figure(figsize=(10, 10))
         plt.imshow(
             heatmap_data,
@@ -436,7 +436,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
 
-        image_path = f"{directory_path}/{filename}.svg"
+        image_path = f"{directory_path}/{filename}.png"
         plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=True)
         # plt.show()
         image_path_list.append(image_path)
