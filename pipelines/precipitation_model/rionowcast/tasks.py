@@ -416,7 +416,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
             os.makedirs(directory_path)
 
         image_path = f"{directory_path}/{filename}.png"
-        plt.savefig(image_path, bbox_inches="tight", pad_inches=0, dpi=200, transparent=True)
+        plt.savefig(image_path, pad_inches=0, dpi=200)
         # plt.show()
         image_path_list.append(image_path)
 
