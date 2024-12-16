@@ -375,6 +375,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     values, colors = zip(*filtered_colors)
     vmin, vmax = min(values), max(values)
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
+    cmap.set_under("#ffffff")
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
@@ -415,7 +416,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
             os.makedirs(directory_path)
 
         image_path = f"{directory_path}/{filename}.png"
-        plt.savefig(image_path, bbox_inches="tight", pad_inches=0.1, dpi=80, transparent=True)
+        plt.savefig(image_path, bbox_inches="tight", pad_inches=0, dpi=200, transparent=True)
         # plt.show()
         image_path_list.append(image_path)
 
