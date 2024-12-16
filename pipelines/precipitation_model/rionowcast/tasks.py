@@ -129,8 +129,8 @@ def calculate_start_and_end_date(
             end_historical_datetime = datetime.datetime.strptime(
                 end_historical_datetime, "%Y-%m-%d %H:%M:%S"
             )
-        except ValueError as e:
-            raise ValueError(f"Invalid date format: {e}")
+        except ValueError as error:
+            raise ValueError(f"Invalid date format: {error}")
 
     end_datetime = pendulum.instance(end_historical_datetime).replace(
         minute=0, second=0, microsecond=0
@@ -150,7 +150,7 @@ def calculate_start_and_end_date(
 
 
 @task()
-def query_data_from_gcp(  # pylint: disable=too-many-arguments
+def query_data_from_gcp(  # pylint: disable=too-many-arguments, too-many-locals
     dataset_id: str,
     table_id: str,
     billing_project_id: str,
@@ -309,6 +309,7 @@ def add_caracterization_columns_on_dfr(
     return geolocalized_df
 
 
+# pylint: disable=too-many-locals
 @task
 def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     """
@@ -342,7 +343,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     """
 
     alertario_precipitation_colors = [
-        {"value": 0, "color": "#eeeee4"},  # Nenhuma cor para o valor 0
+        # {"value": 0, "color": "#eeeee4"},  # Nenhuma cor para o valor 0
         {"value": 0.02, "color": "#63bbff"},
         {"value": 5, "color": "#91ccab"},
         {"value": 10, "color": "#bfdd56"},
@@ -372,12 +373,9 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     ]
 
     values, colors = zip(*filtered_colors)
-
-    # Criar uma colormap usando as cores selecionadas
+    vmin, vmax = min(values), max(values)
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
-    values = list(values)
-    values.sort()
-    norm = mcolors.Normalize(vmin=values[0], vmax=values[-1])
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
@@ -390,12 +388,20 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         heatmap_data = dataframe.pivot(
             index="latitude", columns="longitude", values=prediction
         ).sort_index(ascending=False)
-        log(heatmap_data.iloc[:5, :5])
+        log(f"Heatmap before changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
+        heatmap_data[heatmap_data < 0.2] = np.nan
+        log(f"Heatmap after changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
 
         # Plotting the heatmap
+        interpolation = "catrom"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
         plt.figure(figsize=(10, 10))
-        plt.imshow(heatmap_data, cmap=cmap, norm=norm)
-        # sns.heatmap(heatmap_data, cmap=cmap, norm=norm, cbar=False)
+        plt.imshow(
+            heatmap_data,
+            cmap=cmap,
+            norm=norm,
+            interpolation=interpolation,
+            interpolation_stage="rgba",
+        )
         plt.xlabel("")
         plt.ylabel("")
         plt.xticks(ticks=[], labels=[])
