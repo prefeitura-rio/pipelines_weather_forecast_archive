@@ -392,7 +392,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     cmap.set_under("#ffffff")
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
-    # norm = CustomNormalize(vmin=vmin, vmax=vmax)
+    # norm = CustomNormalize(vmin=vmin, vmax=vmax)def create_image(dataframe: pd.DataFrame, filename: str) -> List:
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
