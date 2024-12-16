@@ -414,7 +414,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         log(f"Max value: {np.max(heatmap_data)}")
         log(f"nan count: {nan_count}, shape {heatmap_data.size}")
 
-        interpolation = "catrom"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
+        interpolation = "spline36"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
         plt.figure(figsize=(10, 10))
         plt.imshow(
             heatmap_data,
