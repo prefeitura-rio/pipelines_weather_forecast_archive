@@ -9,8 +9,8 @@ from pathlib import Path
 from time import sleep
 from typing import List
 
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors  # pylint: disable=E0611, E0401
+import matplotlib.pyplot as plt  # pylint: disable=E0611, E0401
 import numpy as np
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
@@ -309,6 +309,20 @@ def add_caracterization_columns_on_dfr(
     return geolocalized_df
 
 
+class CustomNormalize(mcolors.Normalize):
+    """Função personalizada de colormap que retorna transparência para valores < 0.02"""
+
+    def __call__(self, value, clip=False):
+        # Valores menores que 0.02 serão mapeados como NaN (transparentes)
+        if np.isscalar(value):
+            if value < 0.02:
+                return np.nan
+        else:
+            value = np.array(value)
+            value[value < 0.02] = np.nan
+        return super().__call__(value, clip)
+
+
 # pylint: disable=too-many-locals
 @task
 def create_image(dataframe: pd.DataFrame, filename: str) -> List:
@@ -376,7 +390,9 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     vmin, vmax = min(values), max(values)
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
     cmap.set_under("#ffffff")
-    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    # norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+    norm = CustomNormalize(vmin=vmin, vmax=vmax)
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
@@ -393,7 +409,11 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         heatmap_data[heatmap_data < 0.2] = np.nan
         log(f"Heatmap after changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
 
-        # Plotting the heatmap
+        nan_count = np.isnan(heatmap_data).sum().sum()
+        log(f"Min value: {np.min(heatmap_data)}")
+        log(f"Max value: {np.max(heatmap_data)}")
+        log(f"nan count: {nan_count}, shape {heatmap_data.size}")
+
         interpolation = "catrom"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
         plt.figure(figsize=(10, 10))
         plt.imshow(
@@ -416,7 +436,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
             os.makedirs(directory_path)
 
         image_path = f"{directory_path}/{filename}.png"
-        plt.savefig(image_path, pad_inches=0, dpi=200)
+        plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=True)
         # plt.show()
         image_path_list.append(image_path)
 
