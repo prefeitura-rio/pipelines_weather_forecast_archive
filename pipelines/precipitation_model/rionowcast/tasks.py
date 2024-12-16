@@ -390,9 +390,9 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     vmin, vmax = min(values), max(values)
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
     cmap.set_under("#ffffff")
-    # norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
-    norm = CustomNormalize(vmin=vmin, vmax=vmax)
+    # norm = CustomNormalize(vmin=vmin, vmax=vmax)
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
