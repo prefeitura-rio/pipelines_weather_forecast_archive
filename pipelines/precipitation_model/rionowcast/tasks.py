@@ -379,7 +379,6 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         {"value": 90, "color": "#1C0000"},
     ]
 
-    # Filtrar cores que não são None
     filtered_colors = [
         (entry["value"], entry["color"])
         for entry in alertario_precipitation_colors
@@ -398,7 +397,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
 
     predictions = ["1h_prediction", "2h_prediction", "3h_prediction"]
     dataframe[predictions] = dataframe[predictions].astype(float)
-    # dataframe[predictions] = dataframe[predictions].replace(0, np.nan)
+    dataframe[predictions] = dataframe[predictions].replace(np.nan, 0)
 
     image_path_list = []
     for prediction in predictions:
@@ -412,7 +411,6 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         nan_count = np.isnan(heatmap_data).sum().sum()
         log(f"Min value: {np.min(heatmap_data)}")
         log(f"Max value: {np.max(heatmap_data)}")
-        log(f"nan count: {nan_count}, shape {heatmap_data.size}")
 
         interpolation = "catrom"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
         plt.figure(figsize=(10, 10))
@@ -437,7 +435,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
             os.makedirs(directory_path)
 
         image_path = f"{directory_path}/{filename}.png"
-        plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=False)
+        plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=True)
         # plt.show()
         image_path_list.append(image_path)
 
