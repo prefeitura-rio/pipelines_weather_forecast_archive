@@ -356,27 +356,39 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     Creates separate subdirectories for 1h, 2h and 3h prediction images.
     """
 
+    # alertario_precipitation_colors = [
+    #     # {"value": 0, "color": "#eeeee4"},  # Nenhuma cor para o valor 0
+    #     {"value": 0.02, "color": "#63bbff"},
+    #     {"value": 5, "color": "#91ccab"},
+    #     {"value": 10, "color": "#bfdd56"},
+    #     {"value": 15, "color": "#eeee01"},
+    #     {"value": 20, "color": "#ffd163"},
+    #     {"value": 25, "color": "#ffb421"},
+    #     {"value": 30, "color": "#ff9700"},
+    #     {"value": 35, "color": "#f57000"},
+    #     {"value": 40, "color": "#ee5500"},
+    #     {"value": 45, "color": "#ee2a00"},
+    #     {"value": 50, "color": "#ED0000"},
+    #     {"value": 55, "color": "#d40000"},
+    #     {"value": 60, "color": "#bc0000"},
+    #     {"value": 65, "color": "#a30000"},
+    #     {"value": 70, "color": "#8A0000"},
+    #     {"value": 75, "color": "#6e0000"},
+    #     {"value": 80, "color": "#530000"},
+    #     {"value": 85, "color": "#380000"},
+    #     {"value": 90, "color": "#1C0000"},
+    # ]
     alertario_precipitation_colors = [
-        # {"value": 0, "color": "#eeeee4"},  # Nenhuma cor para o valor 0
-        {"value": 0.02, "color": "#63bbff"},
-        {"value": 5, "color": "#91ccab"},
-        {"value": 10, "color": "#bfdd56"},
-        {"value": 15, "color": "#eeee01"},
-        {"value": 20, "color": "#ffd163"},
-        {"value": 25, "color": "#ffb421"},
-        {"value": 30, "color": "#ff9700"},
-        {"value": 35, "color": "#f57000"},
-        {"value": 40, "color": "#ee5500"},
-        {"value": 45, "color": "#ee2a00"},
-        {"value": 50, "color": "#ED0000"},
-        {"value": 55, "color": "#d40000"},
-        {"value": 60, "color": "#bc0000"},
-        {"value": 65, "color": "#a30000"},
-        {"value": 70, "color": "#8A0000"},
-        {"value": 75, "color": "#6e0000"},
-        {"value": 80, "color": "#530000"},
-        {"value": 85, "color": "#380000"},
-        {"value": 90, "color": "#1C0000"},
+        {"value": 0.02, "color": "#66BCFB"},
+        {"value": 10, "color": "#BEDD58"},
+        {"value": 20, "color": "#F6D001"},
+        {"value": 30, "color": "#FD9201"},
+        {"value": 40, "color": "#F64801"},
+        {"value": 50, "color": "#EF0101"},
+        {"value": 60, "color": "#BC0101"},
+        {"value": 70, "color": "#870101"},
+        {"value": 80, "color": "#550101"},
+        {"value": 90, "color": "#200101"},
     ]
 
     filtered_colors = [
@@ -435,7 +447,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
             os.makedirs(directory_path)
 
         image_path = f"{directory_path}/{filename}.png"
-        plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=True)
+        plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=False)
         # plt.show()
         image_path_list.append(image_path)
 
