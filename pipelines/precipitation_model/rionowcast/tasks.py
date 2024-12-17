@@ -388,7 +388,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     values, colors = zip(*filtered_colors)
     vmin, vmax = min(values), max(values)
     cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
-    cmap.set_under("#FFFFFF")
+    cmap.set_under("#FFFFFF00")
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
     # norm = CustomNormalize(vmin=vmin, vmax=vmax)
