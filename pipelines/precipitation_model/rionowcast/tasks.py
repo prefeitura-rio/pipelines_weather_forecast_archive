@@ -392,7 +392,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
     cmap.set_under("#FFFFFF")
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
-    # norm = CustomNormalize(vmin=vmin, vmax=vmax)def create_image(dataframe: pd.DataFrame, filename: str) -> List:
+    # norm = CustomNormalize(vmin=vmin, vmax=vmax)
 
     dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
 
@@ -406,7 +406,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
             index="latitude", columns="longitude", values=prediction
         ).sort_index(ascending=False)
         log(f"Heatmap before changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
-        heatmap_data[heatmap_data < 0.2] = np.nan
+        heatmap_data[heatmap_data < 0.2] = 0
         log(f"Heatmap after changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
 
         nan_count = np.isnan(heatmap_data).sum().sum()
