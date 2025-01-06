@@ -13,12 +13,12 @@ import matplotlib.colors as mcolors  # pylint: disable=E0611, E0401
 import matplotlib.pyplot as plt  # pylint: disable=E0611, E0401
 import numpy as np
 import pandas as pd
-from PIL import Image
 import pendulum  # pylint: disable=E0611, E0401
 
 # import seaborn as sns
 from basedosdados import Base  # pylint: disable=E0611, E0401
 from google.cloud import bigquery  # pylint: disable=E0611, E0401
+from PIL import Image
 from prefect import task  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
