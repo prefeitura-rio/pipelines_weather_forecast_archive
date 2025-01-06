@@ -363,8 +363,8 @@ with Flow(
     images_path_wb_transp = add_transparency_on_image_whites(images_path_wb)
     model_version_ = convert_parameter_to_type(model_version, str)
     destination_folder_wb = get_storage_destination(
-        path="cor-clima-imagens/predicao_precipitacao/rionowcast/teste/v" + model_version_
-    )  # TODO: remove test
+        path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
+    )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
