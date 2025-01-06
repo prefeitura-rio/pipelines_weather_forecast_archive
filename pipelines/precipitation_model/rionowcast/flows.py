@@ -24,6 +24,7 @@ from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disa
 )
 from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
     add_caracterization_columns_on_dfr,
+    add_transparency_on_image_whites,
     calculate_start_and_end_date,
     create_image,
     geolocalize_data,
@@ -359,27 +360,28 @@ with Flow(
     # #  Save image on GCP         #
     # ##############################
     images_path_wb = create_image(geolocalized_df, filename=end_historical_datetime_brasilia)
+    images_path_wb_transp = add_transparency_on_image_whites(images_path_wb)
     model_version_ = convert_parameter_to_type(model_version, str)
     destination_folder_wb = get_storage_destination(
-        path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
-    )
+        path="cor-clima-imagens/predicao_precipitacao/rionowcast/teste/v" + model_version_
+    )  # TODO: remove test
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/1h/without_background",
-        source_file_names=[images_path_wb[0]],
+        source_file_names=[images_path_wb_transp[0]],
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/2h/without_background",
-        source_file_names=[images_path_wb[1]],
+        source_file_names=[images_path_wb_transp[1]],
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/3h/without_background",
-        source_file_names=[images_path_wb[2]],
+        source_file_names=[images_path_wb_transp[2]],
     )
     # ##############################
     # #  Save predictions on GCP   #

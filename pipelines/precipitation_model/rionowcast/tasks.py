@@ -13,6 +13,7 @@ import matplotlib.colors as mcolors  # pylint: disable=E0611, E0401
 import matplotlib.pyplot as plt  # pylint: disable=E0611, E0401
 import numpy as np
 import pandas as pd
+from PIL import Image
 import pendulum  # pylint: disable=E0611, E0401
 
 # import seaborn as sns
@@ -21,6 +22,7 @@ from google.cloud import bigquery  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
+from pipelines.precipitation_model.rionowcast.utils import calculate_opacity
 from pipelines.utils.utils_wf import convert_dtypes
 
 # @task()
@@ -420,7 +422,7 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
         heatmap_data[heatmap_data < 0.2] = 0
         log(f"Heatmap after changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
 
-        nan_count = np.isnan(heatmap_data).sum().sum()
+        # nan_count = np.isnan(heatmap_data).sum().sum()
         log(f"Min value: {np.min(heatmap_data)}")
         log(f"Max value: {np.max(heatmap_data)}")
 
@@ -453,3 +455,54 @@ def create_image(dataframe: pd.DataFrame, filename: str) -> List:
 
     image_path_list.sort()
     return image_path_list
+
+
+@task
+def add_transparency_on_image_whites(img_paths: List[str]) -> List[str]:
+    """
+    Adiciona transparência a uma imagem com base na proximidade dos pixels à cor branca.
+
+    A função processa uma imagem no formato RGBA e ajusta o canal alfa (transparência)
+    para cada pixel. Pixels cuja intensidade mínima (entre os canais R, G e B) seja menor
+    ou igual a 200 são definidos como totalmente opacos (opacidade máxima de 255). Para
+    os demais pixels, a opacidade é calculada com base na distância em relação à cor branca
+    (255, 255, 255).
+
+    A transparência é aplicada de forma que:
+        - 0 significa completamente transparente.
+        - 255 significa completamente opaco.
+
+    Args:
+        img_paths (list): Lista com os caminho para as imagens de entrada no formato PNG.
+
+    Returns:
+        list: Lista com os caminho para as novas imagens com transparência aplicada.
+    """
+
+    # saved_img_paths = []
+    for img_path in img_paths:
+        image = Image.open(img_path).convert(
+            "RGBA"
+        )  # Convertendo para RGBA para permitir a transparência
+
+        data = np.array(image)
+
+        # Atualizando os valores de alfa (transparência) para cada pixel
+        for i in range(data.shape[0]):
+            for j in range(data.shape[1]):
+                pixel = data[i, j]
+                if pixel.min() <= 200:
+                    opacity = 255  # total opacity
+                    data[i, j] = (pixel[0], pixel[1], pixel[2], opacity)
+                else:
+                    opacity = calculate_opacity(pixel)
+                    data[i, j] = (pixel[0], pixel[1], pixel[2], opacity)
+
+        # Converter o array NumPy de volta para uma imagem
+        new_image = Image.fromarray(data, "RGBA")
+
+        # saved_img_path = "data/test_add_image_transparency.png"
+        new_image.save(img_path)
+    # new_image.show()
+
+    return img_paths
