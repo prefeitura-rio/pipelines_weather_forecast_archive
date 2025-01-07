@@ -9,14 +9,20 @@ from pathlib import Path
 from time import sleep
 from typing import List
 
-import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors  # pylint: disable=E0611, E0401
+import matplotlib.pyplot as plt  # pylint: disable=E0611, E0401
+import numpy as np
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
+
+# import seaborn as sns
 from basedosdados import Base  # pylint: disable=E0611, E0401
 from google.cloud import bigquery  # pylint: disable=E0611, E0401
+from PIL import Image
 from prefect import task  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
+from pipelines.precipitation_model.rionowcast.utils import calculate_opacity
 from pipelines.utils.utils_wf import convert_dtypes
 
 # @task()
@@ -125,8 +131,8 @@ def calculate_start_and_end_date(
             end_historical_datetime = datetime.datetime.strptime(
                 end_historical_datetime, "%Y-%m-%d %H:%M:%S"
             )
-        except ValueError as e:
-            raise ValueError(f"Invalid date format: {e}")
+        except ValueError as error:
+            raise ValueError(f"Invalid date format: {error}")
 
     end_datetime = pendulum.instance(end_historical_datetime).replace(
         minute=0, second=0, microsecond=0
@@ -146,7 +152,7 @@ def calculate_start_and_end_date(
 
 
 @task()
-def query_data_from_gcp(  # pylint: disable=too-many-arguments
+def query_data_from_gcp(  # pylint: disable=too-many-arguments, too-many-locals
     dataset_id: str,
     table_id: str,
     billing_project_id: str,
@@ -154,6 +160,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     end_datetime: str = None,
     filename: str = "data",
     save_format: str = "csv",
+    renormalization: bool = True,
 ) -> Path:
     """
     Download historical data from source.
@@ -191,8 +198,20 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
         "altitude": "int64",
         "horizontal_reflectivity_mean": "float64",
     }
-
     dfr = convert_dtypes(dfr, dtype_mapping)
+    log(f"Shape of dataset before renormalization: {dfr.shape}")
+    if "horizontal_reflectivity_mean" in dfr.columns and renormalization:
+        min_val = dfr["horizontal_reflectivity_mean"].min()
+        max_val = dfr["horizontal_reflectivity_mean"].max()
+        log(f"Min and max values before renormalization {min_val}, {max_val}")
+        dfr["horizontal_reflectivity_mean"] = (dfr["horizontal_reflectivity_mean"] - min_val) / (
+            max_val - min_val
+        )
+    # TODO: remove normalization after rionowcast finish preprocessing fixes
+
+    log(f"df from {table_id}: {dfr.iloc[0]}")
+    log(f"dtypes from {table_id}: {dfr.dtypes}")
+
     if save_format == "csv":
         dfr.to_csv(savepath, index=False)
     elif save_format == "parquet":
@@ -204,89 +223,286 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
 
 
 @task
-def create_image(data, filename) -> List:
+def geolocalize_data(
+    denormalized_prediction_dataset: np.array,
+    min_lon: float,
+    min_lat: float,
+    max_lon: float,
+    max_lat: float,
+) -> pd.DataFrame:
     """
-    Create image using Geolocalized data or the numpy array from desnormalized_data function
-    Exemplo de código que usei pra gerar uma imagem vindo de um xarray:
+    Geolocalize the denormalized prediction data by mapping array indices to lat/lon coordinates.
+    Any value less then 0.02 will be set to zero. (confirm this)
 
-    def create_and_save_image(data: xr.xarray, variable) -> Path:
+    Parameters
+    ----------
+    denormalized_prediction_dataset : np.array
+        3D numpy array containing denormalized prediction data with shape (3, height, width)
+        representing predictions for 1h, 2h and 3h ahead
+    min_lon : float
+        Minimum longitude value for the prediction grid
+    min_lat : float
+        Minimum latitude value for the prediction grid
+    max_lon : float
+        Maximum longitude value for the prediction grid
+    max_lat : float
+        Maximum latitude value for the prediction grid
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the geolocalized predictions with columns:
+        - latitude: Latitude coordinate for each prediction point
+        - longitude: Longitude coordinate for each prediction point
+        - 1h_prediction: Predicted value 1 hour ahead
+        - 2h_prediction: Predicted value 2 hours ahead
+        - 3h_prediction: Predicted value 3 hours ahead
+    """
+    denormalized_prediction_dataset[denormalized_prediction_dataset < 0.2] = 0
+
+    column_names = ["latitude", "longitude", "1h_prediction", "2h_prediction", "3h_prediction"]
+    geolocalized_df = pd.DataFrame(columns=column_names)
+
+    dataset_shape = denormalized_prediction_dataset.shape
+    log(f"dataset_shape in geolocalize data: {dataset_shape}")
+
+    lat_scale = (max_lat - min_lat) / dataset_shape[1]
+    lon_scale = (max_lon - min_lon) / dataset_shape[2]
+    for i, j in np.ndindex(
+        denormalized_prediction_dataset.shape[1], denormalized_prediction_dataset.shape[2]
+    ):
+
+        row = {
+            "latitude": -(i + 1) * lat_scale + max_lat,
+            "longitude": (j + 1) * lon_scale + min_lon,
+            "1h_prediction": denormalized_prediction_dataset[0, i, j],
+            "2h_prediction": denormalized_prediction_dataset[1, i, j],
+            "3h_prediction": denormalized_prediction_dataset[2, i, j],
+        }
+
+        geolocalized_df = pd.concat([geolocalized_df, pd.DataFrame([row])], ignore_index=True)
+
+    return geolocalized_df
+
+
+@task
+def add_caracterization_columns_on_dfr(
+    geolocalized_df: pd.DataFrame, model_version, reference_datetime: str
+) -> pd.DataFrame:
+    """
+    Add model version and reference datetime columns to the geolocalized dataframe.
+
+    Parameters
+    ----------
+    geolocalized_df : pd.DataFrame
+        DataFrame containing the geolocalized prediction data
+    model_version : int or str
+        Version number of the model used for predictions
+    reference_datetime : str
+        Reference datetime for the predictions in format 'YYYY-MM-DD HH:mm:ss'
+
+    Returns
+    -------
+    pd.DataFrame
+        Input dataframe with added model_version and reference_datetime columns
+    """
+    geolocalized_df["model_version"] = model_version
+    geolocalized_df["reference_datetime"] = reference_datetime
+    return geolocalized_df
+
+
+class CustomNormalize(mcolors.Normalize):
+    """Função personalizada de colormap que retorna transparência para valores < 0.02"""
+
+    def __call__(self, value, clip=False):
+        # Valores menores que 0.02 serão mapeados como NaN (transparentes)
+        if np.isscalar(value):
+            if value < 0.02:
+                return np.nan
+        else:
+            value = np.array(value)
+            value[value < 0.02] = np.nan
+        return super().__call__(value, clip)
+
+
+# pylint: disable=too-many-locals
+@task
+def create_image(dataframe: pd.DataFrame, filename: str) -> List:
+    """
+    Create heatmap visualizations of precipitation predictions.
+
+    Takes a DataFrame containing geolocalized precipitation predictions and generates heatmap
+    visualizations for 1-hour, 2-hour and 3-hour predictions using a custom color scheme.
+    The heatmaps are saved as image files in prediction-specific subdirectories.
+
+    Parameters
+    ----------
+    dataframe : pd.DataFrame
+        DataFrame containing the geolocalized prediction data with columns:
+        - latitude: Latitude coordinates
+        - longitude: Longitude coordinates
+        - 1h_prediction: 1-hour precipitation predictions
+        - 2h_prediction: 2-hour precipitation predictions
+        - 3h_prediction: 3-hour precipitation predictions
+    filename : str
+        Base filename to use when saving the generated images
+
+    Returns
+    -------
+    List[str]
+        List of paths to the saved heatmap image files
+
+    Notes
+    -----
+    Uses a custom color scheme based on precipitation intensity levels from AlertaRio.
+    Creates separate subdirectories for 1h, 2h and 3h prediction images.
+    """
+
+    # alertario_precipitation_colors = [
+    #     # {"value": 0, "color": "#eeeee4"},  # Nenhuma cor para o valor 0
+    #     {"value": 0.02, "color": "#63bbff"},
+    #     {"value": 5, "color": "#91ccab"},
+    #     {"value": 10, "color": "#bfdd56"},
+    #     {"value": 15, "color": "#eeee01"},
+    #     {"value": 20, "color": "#ffd163"},
+    #     {"value": 25, "color": "#ffb421"},
+    #     {"value": 30, "color": "#ff9700"},
+    #     {"value": 35, "color": "#f57000"},
+    #     {"value": 40, "color": "#ee5500"},
+    #     {"value": 45, "color": "#ee2a00"},
+    #     {"value": 50, "color": "#ED0000"},
+    #     {"value": 55, "color": "#d40000"},
+    #     {"value": 60, "color": "#bc0000"},
+    #     {"value": 65, "color": "#a30000"},
+    #     {"value": 70, "color": "#8A0000"},
+    #     {"value": 75, "color": "#6e0000"},
+    #     {"value": 80, "color": "#530000"},
+    #     {"value": 85, "color": "#380000"},
+    #     {"value": 90, "color": "#1C0000"},
+    # ]
+    alertario_precipitation_colors = [
+        {"value": 0.02, "color": "#66BCFB"},
+        {"value": 10, "color": "#BEDD58"},
+        {"value": 20, "color": "#F6D001"},
+        {"value": 30, "color": "#FD9201"},
+        {"value": 40, "color": "#F64801"},
+        {"value": 50, "color": "#EF0101"},
+        {"value": 60, "color": "#BC0101"},
+        {"value": 70, "color": "#870101"},
+        {"value": 80, "color": "#550101"},
+        {"value": 90, "color": "#200101"},
+    ]
+
+    filtered_colors = [
+        (entry["value"], entry["color"])
+        for entry in alertario_precipitation_colors
+        if entry["color"] is not None
+    ]
+
+    values, colors = zip(*filtered_colors)
+    vmin, vmax = min(values), max(values)
+    cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
+    cmap.set_under("#FFFFFF")
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+    # norm = CustomNormalize(vmin=vmin, vmax=vmax)
+
+    dataframe = dataframe.sort_values(by=["latitude", "longitude"], ascending=[False, True])
+
+    predictions = ["1h_prediction", "2h_prediction", "3h_prediction"]
+    dataframe[predictions] = dataframe[predictions].astype(float)
+    dataframe[predictions] = dataframe[predictions].replace(np.nan, 0)
+
+    image_path_list = []
+    for prediction in predictions:
+        heatmap_data = dataframe.pivot(
+            index="latitude", columns="longitude", values=prediction
+        ).sort_index(ascending=False)
+        log(f"Heatmap before changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
+        heatmap_data[heatmap_data < 0.2] = 0
+        log(f"Heatmap after changing values less than 0.2 to nan:\n{heatmap_data.iloc[:5, :5]}")
+
+        # nan_count = np.isnan(heatmap_data).sum().sum()
+        log(f"Min value: {np.min(heatmap_data)}")
+        log(f"Max value: {np.max(heatmap_data)}")
+
+        interpolation = "catrom"  # "spline36", "bicubic", "gaussian", "bilinear", "catrom"
         plt.figure(figsize=(10, 10))
-
-        # Use the Geostationary projection in cartopy
-        axis = plt.axes(projection=ccrs.PlateCarree())
-
-        lat_max, lon_max = (
-            -21.708288842894145,
-            -42.36573106186053,
-        )  # canto superior direito
-        lat_min, lon_min = (
-            -23.793855217170343,
-            -45.04488171189226,
-        )  # canto inferior esquerdo
-
-        extent = [lon_min, lat_min, lon_max, lat_max]
-        img_extent = [extent[0], extent[2], extent[1], extent[3]]
-
-        # Define the color scale based on the channel
-        colormap = "jet"  # White to black for IR channels
-
-        # Plot the image
-        img = axis.imshow(data, origin="upper", extent=img_extent, cmap=colormap, alpha=0.8)
-
-        # Add coastlines, borders and gridlines
-        axis.coastlines(resolution='10m', color='black', linewidth=0.8)
-        axis.add_feature(cartopy.feature.BORDERS, edgecolor='white', linewidth=0.5)
-
-
-        grdln = axis.gridlines(
-            crs=ccrs.PlateCarree(),
-            color="gray",
-            alpha=0.7,
-            linestyle="--",
-            linewidth=0.7,
-            xlocs=np.arange(-180, 180, 1),
-            ylocs=np.arange(-90, 90, 1),
-            draw_labels=True,
+        plt.imshow(
+            heatmap_data,
+            cmap=cmap,
+            norm=norm,
+            interpolation=interpolation,
+            interpolation_stage="rgba",
         )
-        grdln.top_labels = False
-        grdln.right_labels = False
-
-        plt.colorbar(
-            img,
-            label=variable.upper(),
-            extend="both",
-            orientation="horizontal",
-            pad=0.05,
-            fraction=0.05,
-        )
-
-        output_image_path = Path(os.getcwd()) / "output" / "images"
-
-        save_image_path = output_image_path / (f"{variable}.png")
-
-        if not output_image_path.exists():
-            output_image_path.mkdir(parents=True, exist_ok=True)
-
-        plt.savefig(save_image_path, bbox_inches="tight", pad_inches=0, dpi=300)
-        plt.show()
-        return save_image_path
-    """
-    save_images_path = []
-    images = data[0][0, 0]
-    for i in range(3):
-        plt.imshow(images[i], cmap="viridis")
+        plt.xlabel("")
+        plt.ylabel("")
+        plt.xticks(ticks=[], labels=[])
+        plt.yticks(ticks=[], labels=[])
         plt.axis("off")
 
-        base_path = f"{os.getcwd()}/{i + 1}h"
-        os.makedirs(base_path, exist_ok=True)
-        save_filename = f"{base_path}/{filename}.png"
-        # save_filename = f"{base_path}/{filename}_{i + 1}h.png"
         # não pode ter nada no final do nome, para ter no começo tem que
         # alterar a busca no bucket na api
-        plt.savefig(save_filename, bbox_inches="tight")
-        save_images_path.append(save_filename)
-        log(f"Imagem {i + 1} salva como {save_filename}")
-        plt.close()
-    log(f"Images saved on {save_images_path}")
-    log(os.listdir("./"))
-    return save_images_path
+        directory_path = "prediction_images/" + prediction
+
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
+        image_path = f"{directory_path}/{filename}.png"
+        plt.savefig(image_path, pad_inches=0, dpi=200, bbox_inches="tight", transparent=True)
+        # plt.show()
+        image_path_list.append(image_path)
+
+    image_path_list.sort()
+    return image_path_list
+
+
+@task
+def add_transparency_on_image_whites(img_paths: List[str]) -> List[str]:
+    """
+    Adiciona transparência a uma imagem com base na proximidade dos pixels à cor branca.
+
+    A função processa uma imagem no formato RGBA e ajusta o canal alfa (transparência)
+    para cada pixel. Pixels cuja intensidade mínima (entre os canais R, G e B) seja menor
+    ou igual a 200 são definidos como totalmente opacos (opacidade máxima de 255). Para
+    os demais pixels, a opacidade é calculada com base na distância em relação à cor branca
+    (255, 255, 255).
+
+    A transparência é aplicada de forma que:
+        - 0 significa completamente transparente.
+        - 255 significa completamente opaco.
+
+    Args:
+        img_paths (list): Lista com os caminho para as imagens de entrada no formato PNG.
+
+    Returns:
+        list: Lista com os caminho para as novas imagens com transparência aplicada.
+    """
+
+    # saved_img_paths = []
+    for img_path in img_paths:
+        image = Image.open(img_path).convert(
+            "RGBA"
+        )  # Convertendo para RGBA para permitir a transparência
+
+        data = np.array(image)
+
+        # Atualizando os valores de alfa (transparência) para cada pixel
+        for i in range(data.shape[0]):
+            for j in range(data.shape[1]):
+                pixel = data[i, j]
+                if pixel.min() <= 200:
+                    opacity = 255  # total opacity
+                    data[i, j] = (pixel[0], pixel[1], pixel[2], opacity)
+                else:
+                    opacity = calculate_opacity(pixel)
+                    data[i, j] = (pixel[0], pixel[1], pixel[2], opacity)
+
+        # Converter o array NumPy de volta para uma imagem
+        new_image = Image.fromarray(data, "RGBA")
+
+        # saved_img_path = "data/test_add_image_transparency.png"
+        new_image.save(img_path)
+    # new_image.show()
+
+    return img_paths

@@ -17,30 +17,27 @@ from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
-from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
-    get_now_datetime,
-)
 
-# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;
-#     create_table_and_upload_to_gcs,
-#     task_run_dbt_model_task,
-# )
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
 from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=E0611, E0401
+    add_caracterization_columns_on_dfr,
+    add_transparency_on_image_whites,
     calculate_start_and_end_date,
     create_image,
+    geolocalize_data,
     query_data_from_gcp,
 )
-from pipelines.tasks import (  # pylint: disable=E0611, E0401; task_create_partitions,
+from pipelines.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,; task_create_partitions,
     convert_parameter_to_type,
     get_storage_destination,
     upload_files_to_storage,
 )
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     access_api,
+    denormalize_data,
     download_datasets_from_gypscie,
     execute_dataflow_on_gypscie,
     execute_dataset_processor,
@@ -54,8 +51,9 @@ from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     unzip_files,
 )
 
-# get_billing_project_id, desnormalize_data,
-# geolocalize_data, path_to_dfr,
+# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,
+#     task_run_dbt_model_task,
+# )
 
 
 with Flow(
@@ -102,6 +100,7 @@ with Flow(
     dataset_path = Parameter("dataset_path", default=None, required=False)  # dataset_path
     model_version = Parameter("model_version", default=1, required=False)
 
+    renormalization = Parameter("renormalization", default=True, required=False)
     ####################################
     #  Start preprocessing flow        #
     ####################################
@@ -303,6 +302,7 @@ with Flow(
         end_datetime=end_historical_datetime,
         filename="radar",
         save_format="parquet",
+        renormalization=renormalization,
     )
 
     # Register these datasets on gypscie
@@ -339,20 +339,28 @@ with Flow(
     ziped_dataset_paths = download_datasets_from_gypscie(api, dataset_names=dataset_names)
     dataset_paths = unzip_files(ziped_dataset_paths)
     prediction_datasets = read_numpy_files(dataset_paths)
-    now_datetime = get_now_datetime()
-    # desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
-    # geolocalized_prediction_datasets = geolocalize_data(
-    #     desnormalized_prediction_datasets, now_datetime
-    # )
-    # dfr = add_caracterization_columns_on_dfr(
-    #     geolocalized_prediction_datasets, model_version, update_time=True
-    # )
+    np_array_denormalized = denormalize_data(
+        np_array=prediction_datasets[0][0, 0],
+        data_min=0,
+        data_max=81.770131684971,
+        feature_range=(0, 1),
+    )
+    geolocalized_df_ = geolocalize_data(
+        denormalized_prediction_dataset=np_array_denormalized,
+        min_lon=-43.89,
+        min_lat=-23.13,
+        max_lon=-43.04,
+        max_lat=-22.65,
+    )
+    geolocalized_df = add_caracterization_columns_on_dfr(
+        geolocalized_df_, model_version, reference_datetime=end_historical_datetime_brasilia
+    )
 
     # ##############################
     # #  Save image on GCP         #
     # ##############################
-    # images_path_wb = create_image(geolocalized_prediction_datasets)
-    images_path_wb = create_image(prediction_datasets, filename=end_historical_datetime_brasilia)
+    images_path_wb = create_image(geolocalized_df, filename=end_historical_datetime_brasilia)
+    images_path_wb_transp = add_transparency_on_image_whites(images_path_wb)
     model_version_ = convert_parameter_to_type(model_version, str)
     destination_folder_wb = get_storage_destination(
         path="cor-clima-imagens/predicao_precipitacao/rionowcast/v" + model_version_
@@ -361,19 +369,19 @@ with Flow(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/1h/without_background",
-        source_file_names=[images_path_wb[0]],
+        source_file_names=[images_path_wb_transp[0]],
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/2h/without_background",
-        source_file_names=[images_path_wb[1]],
+        source_file_names=[images_path_wb_transp[1]],
     )
     upload_files_to_storage(
         project="datario",
         bucket_name="datario-public",
         destination_folder=destination_folder_wb + "/3h/without_background",
-        source_file_names=[images_path_wb[2]],
+        source_file_names=[images_path_wb_transp[2]],
     )
     # ##############################
     # #  Save predictions on GCP   #
@@ -381,11 +389,11 @@ with Flow(
 
     # # Save prediction on file
     # prediction_data_path = task_create_partitions(
-    #     dfr,
-    #     partition_date_column="data_predicao",  # TODO: change column name
+    #     geolocalized_df,
+    #     partition_date_column="reference_datetime",
     #     # partition_columns=["ano_particao", "mes_particao", "data_particao"],
     #     savepath="model_prediction",
-    #     suffix=now_datetime,
+    #     suffix=end_historical_datetime_brasilia,
     # )
 
     # # Upload data to BigQuery
@@ -393,6 +401,7 @@ with Flow(
     #     data_path=prediction_data_path,
     #     dataset_id=dataset_id,
     #     table_id=table_id,
+    #     bucket_name="rj-cor",
     #     dump_mode=dump_mode,
     #     biglake_table=False,
     # )
@@ -402,8 +411,6 @@ with Flow(
     #     run_dbt = task_run_dbt_model_task(
     #         dataset_id=dataset_id,
     #         table_id=table_id,
-    #         # mode=materialization_mode,
-    #         # materialize_to_datario=materialize_to_datario,
     #     )
     #     run_dbt.set_upstream(create_table)
 
