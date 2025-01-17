@@ -1,1 +1,0 @@
-{"normalized": 2, "learning_rate": 0.00027, "n_after": 20, "n_before": 10, "std_fac": 10.0, "n_epoch": 100, "weight_bool": 1, "data_modification": null, "model_name": "Mamba"}
