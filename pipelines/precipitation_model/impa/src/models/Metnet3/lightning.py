@@ -41,6 +41,7 @@ class model(LModule):
         lead_time_dim_embedding: int = None,
         merge: bool = False,
         correct_context: bool = False,
+        satellite: bool = False,
         **kwargs,
     ):
         super().__init__(
@@ -57,6 +58,7 @@ class model(LModule):
             x_std=x_std,
             data_modification=data_modification,
             merge=merge,
+            satellite=satellite,
         )
 
         self.save_hyperparameters()
@@ -146,7 +148,7 @@ class model(LModule):
         )
         self.upsample_8km_to_4km = Upsample2x(self.dim // 2)
 
-        if not self.old:
+        if not self.old or not self.sat:
             self.crop_to_half = CenterCrop(256)
         else:
             self.crop_to_half = CenterCrop(240)
@@ -159,6 +161,11 @@ class model(LModule):
         )
 
     def forward(self, x, lead_times=None):
+        try:
+            self.correct_context
+        except AttributeError:
+            self.correct_context = False
+
         if self.correct_context:
             if self.merge:
                 if self.dm_option["No_satellite"]:

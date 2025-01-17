@@ -14,7 +14,19 @@ from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_keys
 
+dataset_dict = {
+    "SAT": {
+        "ground_truth_file": "pipelines/precipitation_model/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf",
+        "grid_file": "pipelines/precipitation_model/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy",
+    },
+    "MDN": {
+        "ground_truth_file": "pipelines/precipitation_model/data/dataframes/MDN-d2CMAX-DBZH-real_time/test.hdf",
+        "grid_file": "pipelines/precipitation_model/data/dataframe_grids/rio_de_janeiro-res=700m-256x256.npy",
+    },
+}
+
 parser = ArgumentParser()
+parser.add_argument("dataset", type=str, choices=["SAT", "MDN"])
 parser.add_argument("--num_workers", type=int, default=16)
 args = parser.parse_args()
 
@@ -22,16 +34,12 @@ NLAGS = 18
 METRICS_NAMES = ["log-MAE", "log-MSE", "CSI1", "CSI8"]
 order = np.array([[1, 1, -1, -1]]).reshape(1, -1)
 
-config = pathlib.Path("pipelines/precipitation_model/impa/src/eval/real_time_config.json")
+config = pathlib.Path(f"pipelines/precipitation_model/impa/src/eval/real_time_config_{args.dataset}.json")
 with open(config, "r") as json_file:
     specs_dict = json.load(json_file)
 
-ground_truth_df = h5py.File(
-    "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
-)
-latlons = np.load(
-    f"pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
-)
+ground_truth_df = h5py.File(dataset_dict[args.dataset]["ground_truth_file"])
+latlons = np.load(dataset_dict[args.dataset]["grid_file"])
 feature = ground_truth_df["what"].attrs["feature"]
 timestep = int(ground_truth_df["what"].attrs["timestep"])
 
@@ -42,7 +50,7 @@ past_obs_dt = pd.to_datetime(past_obs)
 preds = [ground_truth_df]
 model_names = ["Ground truth"]
 for model_name in specs_dict["models"].keys():
-    predictions = f"pipelines/precipitation_model/impa/predictions/{model_name}.hdf"
+    predictions = f"predictions_{args.dataset}/{model_name}.hdf"  # aqui
     try:
         pred_hdf = h5py.File(predictions)
     except FileNotFoundError:
@@ -68,7 +76,7 @@ def task_lag(lag: int):
             future_key = f"{past_obs}/{future_key}"
         try:
             if i == 0:
-                values = np.array(pred[future_key])[:, :, 0]
+                values = np.array(pred[future_key]).reshape((*latlons.shape[:2], -1))[:, :, 0]
             else:
                 values = np.array(pred[future_key])
             if i == 0:
@@ -121,6 +129,6 @@ with Pool(min(NLAGS, args.num_workers)) as pool:
 
 # save dataframe
 df = pd.concat(dfs)
-metrics_filepath = pathlib.Path("pipelines/precipitation_model/impa/src/eval/metrics/metrics.csv")
+metrics_filepath = pathlib.Path(f"pipelines/precipitation_model/eval/metrics/metrics-{args.dataset}.csv")
 metrics_filepath.parent.mkdir(parents=True, exist_ok=True)
 df.to_csv(metrics_filepath, index=False, na_rep="nan")

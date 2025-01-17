@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 import torch
 
 from pipelines.precipitation_model.impa.src.models.Evolution_Network.evolution_network import (

@@ -10,11 +10,26 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.precipitation_model.impa.src.utils.eval_utils import predict_dict
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 
+dataframe_dict = {
+    "SAT": {
+        "dataframe_filepath": "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
+        "dataframe": "SAT-ABI-L2-RRQPEF-{location}-file=thr=0_split2",
+        "data_type": "SATELLITE",
+        "locations": ["rio_de_janeiro"],
+    },
+    "MDN": {
+        "dataframe_filepath": "data/dataframes/MDN-d2CMAX-DBZH-real_time/test.hdf",
+        "dataframe": "RADAR-d2CMAX-DBZH-large_split_radar",
+        "data_type": "RADAR",
+        "locations": None,
+    },
+}
 
-def predict(num_workers=8, cuda=False):
+
+def predict(dataframe_key, num_workers=8, cuda=False):
     accelerator = "gpu" if cuda else "cpu"
 
-    config = pathlib.Path("pipelines/precipitation_model/impa/src/eval/real_time_config.json")
+    config = pathlib.Path(f"pipelines/precipitation_model/impa/src/eval/real_time_config_{dataframe_key}.json")
     with open(config, "r") as json_file:
         specs_dict = json.load(json_file)
 
@@ -26,8 +41,11 @@ def predict(num_workers=8, cuda=False):
         predict_func = predict_dict[model_name]
         if "args" in info:
             args = info["args"]
+            if "locations" not in args:
+                args["locations"] = None
             args["num_workers"] = num_workers
             args["accelerator"] = accelerator
+            args |= dataframe_dict[dataframe_key]
 
             if "params_filepath" in info:
                 with open(info["params_filepath"], "r") as json_file:
@@ -47,29 +65,22 @@ def predict(num_workers=8, cuda=False):
                 predict_func(args)
             continue
 
-        model_path = pathlib.Path(f"pipelines/precipitation_model/impa/src/models/{model_name}/")
+        model_path = pathlib.Path(f"pipelines/precipitation_model/impa/models_{dataframe_key}/{model_name}/")
         model_file = model_path / info["model_file"]
 
-        output_predict_filepaths = [
-            f"pipelines/precipitation_model/impa/predictions/{model_name}.hdf"
-        ]
-        log(f"\nmodel_path: {model_path}")
-        log(f"model_file: {model_file}")
-        log(f"output_predict_filepaths: {output_predict_filepaths}\n")
+        output_predict_filepaths = [f"pipelines/precipitation_model/impa/predictions_{dataframe_key}/{model_name}.hdf"]
 
         # Standard arguments
         args = {
             "overwrite": True,
-            "locations": ["rio_de_janeiro"],
             "accelerator": accelerator,
             "output_predict_filepaths": output_predict_filepaths,
-            "dataframe_filepath": "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
-            "dataframe": "SAT-ABI-L2-RRQPEF-{location}-file=thr=0_split2",
             "num_workers": num_workers,
             "input_model_filepath": model_file,
             "compile": False,
             "batch_to_predict": 8,
         }
+        args |= dataframe_dict[dataframe_key]
         # Model params
         with open(model_path / "params.json", "r") as json_file:
             params = json.load(json_file)

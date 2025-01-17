@@ -1,6 +1,6 @@
 # Rio Rain
 
-This project aims to provide a pipeline for real time prediction in Rio de Janeiro. It contains a script that automatically downloads the most recent satellite data to then process it and, finally, make predictions for the next 3 hours.
+This project aims to provide a pipeline for real time prediction in Rio de Janeiro. It contains a script that automatically downloads the most recent data to then process it and, finally, make predictions for the next 3 hours.
 
 ## Table of Contents
 
@@ -52,19 +52,21 @@ Once the script stops running, you can find the output files as described in the
 
 Note that there are optional arguments for this command:
 
-`python src/eval/update-real_time.py [--cuda] [--num_workers] [--datetime]`,
+`python src/eval/update-real_time_[dataset].py [--cuda] [--num_workers] [--datetime]`,
+
+`[dataset]` represents the type of data to be used and may be one of `SAT` (GOES-16 RRQPE product) and `MDN` (Mendanha radar).
 
 Here `--cuda` may be passed if you want to make predictions though GPU computing. If you want to do all calculations in CPU, you should not pass the optional argument `--cuda`. This will be slower and some models may not work in this mode.
 
 On the other hand `[--num_workers]` is the number of processes that may be run in parallel. It must be an integer value greater than zero. Generally, the larger this number is, the faster the script reaches its conclusion.
 
-Finally, `[--datetime]` may be passed to make predictions from the time passed in UTC. The format passed must be '%Y-%m-%d %H:%M:%S', so if we want predictions from 13/01/2024 14:00:00 BRT, we must call `bash src/eval/update-real_time.sh --datetime '2024-01-13 17:00:00'`.
+Finally, `[--datetime]` may be passed to make predictions from the time passed in UTC. The format passed must be '%Y-%m-%d %H:%M:%S', so if we want predictions from 13/01/2024 14:00:00 BRT, we must call `python src/eval/update-real_time_SAT.py --datetime '2024-01-13 17:00:00'`.
 
 If it is desired to make predictions for just some of the models, it is possible to edit the file `src/eval/real_time_config.json` and delete the dictionary entries associated to the model that is to be excluded. Be mindful that the model `EVONET` is necessary for predicting with `NowcastNet`.
 
 ### Evaluation
 
-Scripts for evaluating model predictions for the last three hours are also made available. Once the predictions are made through the main script, you may call `python src/eval/viz/plot_real_time.py [--num_workers]` to produce plots or `python src/eval/metrics/calc-metrics.py [--num_workers]` to calculate metrics.
+Scripts for evaluating model predictions for the last three hours are also made available. Once the predictions are made through the main script, you may call `python src/eval/viz/plot-real_time.py [dataset] [--num_workers]` to produce plots or `python src/eval/metrics/calc-metrics.py [--num_workers]` to calculate metrics.
 
 
 ## File structure
@@ -102,9 +104,9 @@ In the `data` folder, the coordinate grids associated to the points in Earth's s
 
 In the `eval` folder, the output metrics and prediction graphs are found in their respective subfolder.
 
-In the `models` folder, the parameters and necessary information associated to each model are found.
+In the `models_[dataset]` folder, the parameters and necessary information associated to each model are found.
 
-In the `predictions` folder, the output predictions are saved in `.hdf` files which contain predictions for each model. In these files, the data is organized as follows:
+In the `predictions_[dataset]` folder, the output predictions are saved in `.hdf` files which contain predictions for each model. In these files, the data is organized as follows:
 
 ```
 root

@@ -1,39 +1,11 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 from pipelines.precipitation_model.impa.src.data.HDFDataset2 import HDFDataset2
-from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
-    HDFDatasetLocations,
-)
-from pipelines.precipitation_model.impa.src.data.HDFDatasetMerged import (
-    HDFDatasetMerged,
-)
+from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import HDFDatasetLocations
+from pipelines.precipitation_model.impa.src.data.HDFDatasetMerged import HDFDatasetMerged
 from pipelines.precipitation_model.impa.src.data.PredHDFDataset2 import PredHDFDataset2
-from pipelines.precipitation_model.impa.src.data.PredHDFDatasetLocations import (
-    PredHDFDatasetLocations,
-)
-
-extension_dicts = {
-    "context_LDM_VAE": ".pt",
-    # "context_LDM_concat": ".pt",
-    "context_LDM_concat": ".joblib",
-    "context_DDPM_VAE": ".pt",
-    "LDCAST_VAE": ".pt",
-    "context_LDM_3D_VAE": ".pt",
-}
-
-dataframe_dict = {
-    0: "square-RADAR-d2CMAX-DBZH-heavy_rain",
-    1: "SAT-corrected_ABI-L2-RRQPEF-heavy_rain",
-    2: "SAT-ABI-L2-RRQPEF-rain_events-sat-thr=10-radius=1h",
-    3: "SAT-ABI-L2-RRQPEF-{location}-file=thr=0",
-    4: "SAT-ABI-L2-RRQPEF-{location}-file=thr=0_split2",
-    # Merge Dataset
-    5: "RADAR-d2CMAX-DBZH-file=thr=0_split_radar",
-    6: "DGMR_dataset",
-    # New dataset
-    7: "SAT-ABI-L2-RRQPEF-rain_events-sat-thr=10-radius=1h",
-    # No merge, just radar dataset
-    8: "RADAR-d2CMAX-DBZH-large_split_radar",
-}
+from pipelines.precipitation_model.impa.src.data.PredHDFDatasetLocations import PredHDFDatasetLocations
 
 options_pretrained = {
     1: {
@@ -118,17 +90,10 @@ def get_ds(
         else:
             if args_dict["predictions"] == 1 or args_dict["predictions"] == 2:
                 n_predictions = n_after
-                try:
-                    saved_predictions = options_pretrained[args_dict["predictions"]][
-                        args_dict["dataframe"]
-                    ][args_dict["predictions_option"] - 1]
-                except IndexError:
-                    raise ValueError("Incorrect prediction option.")
+
                 ds = PredHDFDatasetLocations(
                     dataframe_filepath,
                     n_predictions=n_predictions,
-                    model=saved_predictions,
-                    ckpt_file=args_dict["ckpt_file_predictions"],
                     locations=locations,
                     dataset=args_dict["predict_dataframe"],
                     n_after=n_after,
@@ -149,28 +114,21 @@ def get_ds(
                     n_before=n_before,
                     leadtime_conditioning=lead_time,
                     get_item_output=["X", "Y", "index"],
+                    use_datetime_keys=True,
                 )
 
             else:
                 if args_dict["predictions"] == 1 or args_dict["predictions"] == 2:
                     n_predictions = n_after
-                    try:
-                        saved_predictions = options_pretrained[args_dict["predictions"]][
-                            args_dict["dataframe"]
-                        ][args_dict["predictions_option"] - 1]
-                        print(f"Training using the prediction of {saved_predictions}")
-                    except IndexError:
-                        raise ValueError("Incorrect prediction option.")
 
                     ds = PredHDFDataset2(
                         dataframe_filepath,
                         n_predictions=n_predictions,
-                        model=saved_predictions,
                         dataset=args_dict["predict_dataframe"],
-                        ckpt_file=args_dict["ckpt_file_predictions"],
                         n_after=n_after,
                         n_before=n_before,
                         get_item_output=["X", "Y", "index"],
+                        use_datetime_keys=True,
                     )
                 else:
                     raise ValueError("NowcastNet needs predictions to train.")

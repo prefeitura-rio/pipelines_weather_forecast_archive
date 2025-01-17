@@ -36,6 +36,7 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
 from pipelines.tasks import (  # pylint: disable=E0611, E0401
     get_storage_destination,
     upload_files_to_storage,
+    unzip_files,
 )
 
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
@@ -106,6 +107,10 @@ with Flow(
         dt=dt, n_historical_days=n_historical_days
     )
 
+    unzip_files(
+        compressed_files=["pipelines/precipitation_model/impa/model_.zip"],
+        destination_folder="pipelines/precipitation_model/impa/",
+    )
     # Download data from s3
     downloaded_files_rr = download_files_from_s3(
         product="ABI-L2-RRQPEF",

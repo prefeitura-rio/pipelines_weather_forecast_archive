@@ -5,20 +5,8 @@ import torch
 import torch.nn as nn
 from torch.nn.utils import spectral_norm
 
-from pipelines.precipitation_model.impa.src.models.gan.gan_unet.unet_parts import (
-    DoubleConv,
-    Down,
-    OutConv,
-    S,
-    Up,
-    Up2,
-)
-from pipelines.precipitation_model.impa.src.models.gan.parts_gan import (
-    AvgPool,
-    L2_Block,
-    L3_Block,
-    Noise_Projector,
-)
+from pipelines.precipitation_model.impa.src.models.gan.gan_unet.unet_parts import DoubleConv, Down, OutConv, S, Up, Up2
+from pipelines.precipitation_model.impa.src.models.gan.parts_gan import AvgPool, L2_Block, L3_Block, Noise_Projector
 from pipelines.precipitation_model.impa.src.models.nowcasting.layers.generation.generative_network import (
     Generative_Decoder,
     Generative_Encoder,
@@ -110,9 +98,9 @@ class TemporalDiscriminator(nn.Module):
         stride = 2
         padding = 1
         if sat:
-            size = 14 if old else 16
+            size = 15 if old else 16
         else:
-            size = 12
+            size = 16
         after_flatten = 64 + (in_channel - 3) * 4 + (in_channel // 4 + 1) * 8
         self.conv2d = spectral_norm(nn.Conv2d(in_channel, 64, kernel_size=9, stride=2, padding=4))
         self.conv3d_1 = spectral_norm(
@@ -455,8 +443,8 @@ class NowcasnetGenerator(nn.Module):
         self.sat = sat
         self.ngf = 32
 
-        # if self.sat:
-        #     self.upnoise = nn.Upsample(size=30, mode='bilinear', align_corners=True)
+        if self.sat:
+            self.upnoise = nn.Upsample(size=30, mode="bilinear", align_corners=True)
 
         self.gen_encoder = Generative_Encoder(n_channels=channel_in, base_c=self.ngf)
         self.gen_decoder = Generative_Decoder(
@@ -473,8 +461,8 @@ class NowcasnetGenerator(nn.Module):
         pred = pred / 40
         noise_feature = self.noise_projector(z)
         noise_feature = self.deeptospace(noise_feature)
-        # if self.sat:
-        #     noise_feature = self.upnoise(noise_feature)
+        if self.sat:
+            noise_feature = self.upnoise(noise_feature)
         feature = torch.cat([x_encoded, noise_feature], dim=1)
 
         return self.gen_decoder(feature, pred)

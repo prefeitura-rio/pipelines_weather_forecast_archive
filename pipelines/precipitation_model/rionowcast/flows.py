@@ -34,6 +34,7 @@ from pipelines.tasks import (  # pylint: disable=E0611, E0401;; create_table_and
     convert_parameter_to_type,
     get_storage_destination,
     upload_files_to_storage,
+    unzip_files,
 )
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     access_api,
@@ -48,7 +49,6 @@ from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     read_numpy_files,
     register_dataset_on_gypscie,
     task_wait_run,
-    unzip_files,
 )
 
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,

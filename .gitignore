@@ -2,6 +2,8 @@
 *.ipynb_checkpoints/
 pipelines/precipitation_model/impa/data/raw/
 pipelines/precipitation_model/impa/data/processed/satellite/
+pipelines/precipitation_model/impa/models_MDN/
+pipelines/precipitation_model/impa/models_SAT/
 pipelines/precipitation_model/impa/models/data/
 pipelines/precipitation_model/impa/models/docs/
 pipelines/precipitation_model/impa/models/eval/
@@ -9,12 +11,16 @@ pipelines/precipitation_model/impa/models/models/
 pipelines/precipitation_model/impa/models/personal/
 pipelines/precipitation_model/impa/models/radar_cal/
 pipelines/precipitation_model/impa/models/lightning_logs/
+pipelines/precipitation_model/impa/predictions*
 pipelines/precipitation_model/rionowcast/gypscie/integrator/
 pipelines/precipitation_model/rionowcast/gypscie/processors/
 **/test_flow*
 **/gypscie/**
 **/test_flow/**
 *.nc
+
+# Exclude models_.zip from being ignored
+!pipelines/precipitation_model/impa/models_.zip
 
 
 # user defined

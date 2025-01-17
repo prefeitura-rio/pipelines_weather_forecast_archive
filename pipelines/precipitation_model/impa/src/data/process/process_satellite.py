@@ -4,12 +4,9 @@ Process satellite data
 """
 # flake8: noqa: E501
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
-
 import gc
 import os
-
-# import os
-# from argparse import ArgumentParser
+from argparse import ArgumentParser  # aqui
 from datetime import datetime, timedelta
 from glob import glob
 from pathlib import Path
@@ -19,7 +16,7 @@ import pandas as pd
 import psutil
 import xarray as xr
 
-# from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
+from joblib import Parallel, delayed  # pylint: disable=E0611, E0401 aqui
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pyproj import Proj
 from tqdm import tqdm  # pylint: disable=E0611, E0401
@@ -119,21 +116,19 @@ def process_file(
 
     if include_dataset_name:
         df["name"] = "_".join(dataset.dataset_name.split("_")[:2])
-
+    gc.collect()
     return df
 
 
-def load_entire_day(
-    product, ts: pd.Timestamp, lat_bounds, lon_bounds, download_base_path
-) -> pd.DataFrame:
-    """Load and concatenate all files from that day"""
-    year = ts.year
-    day = ts.dayofyear
-
-    if not Path(f"{download_base_path}/{product}/{year}/{day:03d}").exists():
-        log(f"No files found for {product} {year} {day:03d}")
-        return pd.DataFrame()
-
+def process_satellite(
+    datetimes,
+    product="ABI-L2-RRQPEF",
+    lat_min=-26.0,
+    lat_max=-19.0,
+    lon_min=-47.0,
+    lon_max=-40.0,
+    num_workers=16,
+):
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -155,100 +150,39 @@ def load_entire_day(
         case _:
             raise ValueError("Unsupported product selected.")
 
-    # Check if files exist inside path
-    path_ = f"{download_base_path}/{product}/{year}/"
-
-    all_files = []
-    for root, dirs, files in os.walk(path_):
-        for file in files:
-            all_files.append(os.path.join(root, file))
-
-    log(f"Files to be processed: {all_files[:5]} {len(all_files)}")
-
-    # return pd.concat(
-    #     Parallel(n_jobs=num_workers)(
-    #         delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-    #         for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
-    #     )
-    # )
-    dfr_list = []
-    for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"):
-        df = process_file(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-        dfr_list.append(df)
-
-    return pd.concat(dfr_list, ignore_index=True)
-
-
-def process_satellite(
-    product="ABI-L2-RRQPEF",
-    lat_min=-26.0,
-    lat_max=-19.0,
-    lon_min=-47.0,
-    lon_max=-40.0,
-    num_workers=16,
-    day=-1,
-    year=-1,
-    n_historical_days=1,
-    download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
-):
-    """Empty"""
-    log(f"Processing satellite {product}")
-
     lat_bounds = lat_min, lat_max
     lon_bounds = lon_min, lon_max
 
-    end_date = datetime(year, 1, 1) + timedelta(day - 1)
-    today_file = Path(
-        f"pipelines/precipitation_model/impa/data/processed/satellite/{product}/{end_date.date()}.feather"
-    )
-    if today_file.is_file():
-        # Do not process older dates
-        start_date = end_date
-    else:
-        start_date = datetime(year, 1, 1) + timedelta(day - n_historical_days - 1)
+    files = set()
+    for dt in datetimes:
+        year = dt.year
+        day = dt.timetuple().tm_yday
+        hour = dt.hour
+        files = files.union(glob(f"pipelines/precipitation_model/impa/data/raw/satellite/{product}/{year}/{day:03d}/{hour:02d}/*.nc"))
+    files = list(files)
 
-    log(f"DEBUG start_date: {start_date}, end_date: {end_date}")
-    log(f"Start loading entire day of start_date {start_date}")
-    df_current = load_entire_day(
-        product, pd.Timestamp(start_date), lat_bounds, lon_bounds, download_base_path
+    dataframe = pd.concat(
+        Parallel(n_jobs=num_workers)(
+            delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+            for file in tqdm(files)
+        )
     )
+
+    dataframe.reset_index(drop=True, inplace=True)
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
-
-    for date in tqdm(
-        pd.date_range(start_date, end_date),
-        desc="Saving files",
-    ):
-        next_date = date + timedelta(days=1)
-        try:
-            df_next = load_entire_day(
-                product, next_date, lat_bounds, lon_bounds, download_base_path
-            )
-            df_current = pd.concat([df_current, df_next])
-        except ValueError:
-            df_next = None
-        df_current = df_current[df_current["creation"].dt.date == date.date()]
-        df_current.reset_index(drop=True, inplace=True)
-        df_current.to_feather(f"{output_path}/{date.date()}.feather")
-        del df_current
-        try:
-            df_current = df_next.copy()
-        except AttributeError:
-            pass
-        del df_next
-        gc.collect()
+    dataframe.to_feather(f"{output_path}/SAT-real_time.feather")
 
 
-# if __name__ == "__main__":
-#     parser = ArgumentParser()
-#     parser.add_argument("--product", type=str, default="ABI-L2-RRQPEF")
-#     parser.add_argument("--lat_min", type=float, default=-26.0)
-#     parser.add_argument("--lat_max", type=float, default=-19.0)
-#     parser.add_argument("--lon_min", type=float, default=-47.0)
-#     parser.add_argument("--lon_max", type=float, default=-40.0)
-#     parser.add_argument("--num_workers", type=int, default=16)
-#     parser.add_argument("--day", type=int, default=-1)
-#     parser.add_argument("--year", type=int, default=-1)
-#     args = parser.parse_args()
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--product", type=str, default="ABI-L2-RRQPEF")
+    parser.add_argument("--lat_min", type=float, default=-26.0)
+    parser.add_argument("--lat_max", type=float, default=-19.0)
+    parser.add_argument("--lon_min", type=float, default=-47.0)
+    parser.add_argument("--lon_max", type=float, default=-40.0)
+    parser.add_argument("--num_workers", type=int, default=16)
+    parser.add_argument("--datetimes", type=pd.Timestamp, nargs="+")
+    args = parser.parse_args()
 
-#     process_satellite(**vars(args))
+    process_satellite(**vars(args))

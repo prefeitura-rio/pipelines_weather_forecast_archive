@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+
+NRAYS = 360
+
+VARIABLES_DICT = {
+    "TH": "data1",
+    "CLASS": "data10",
+    "DBZH": "data2",
+    "VRADH": "data3",
+    "WRADH": "data4",
+    "ZDR": "data5",
+    "KDP": "data6",
+    "RHOHV": "data7",
+    "SQIH": "data8",
+    "PHIDP": "data9",
+}
+
 sat_dataframe = [
     "SAT-corrected_ABI-L2-RRQPEF-heavy_rain",
     "SAT-ABI-L2-RRQPEF-rain_events-sat-thr=10-radius=1h",

@@ -41,6 +41,7 @@ class HDFDataset2(data.Dataset):
         leadtime_conditioning=False,
         extended_flow=False,
         sample_decay=False,
+        use_datetime_keys=False,
     ):
         self.x_transform = x_transform
         self.y_transform = y_transform
@@ -58,7 +59,7 @@ class HDFDataset2(data.Dataset):
 
         self.leadtime_conditioning = leadtime_conditioning
 
-        self._load_keys()
+        self._load_keys(use_datetime_keys=use_datetime_keys)
 
         if extended_flow:
             suffix = "2"
@@ -119,7 +120,7 @@ class HDFDataset2(data.Dataset):
                 with h5py.File(self.latent_field_filepath, "r") as hdf:
                     self.latent_field_shape = hdf[self.keys[0]].shape
 
-    def _load_keys(self):
+    def _load_keys(self, use_datetime_keys=False):
         with h5py.File(self.filepath) as hdf:
             what = hdf["what"]
             timestep = int(what.attrs["timestep"])
@@ -132,33 +133,43 @@ class HDFDataset2(data.Dataset):
                 self.subgrid_j2 = hdf["subgrid"].attrs["j2"]
             except KeyError:
                 pass
-            total_keys = get_dataset_keys(hdf)
-            self.past_keys = fetch_reversed_past_datetimes(total_keys, self.n_before, timestep)
-            if "latent_field" in self.get_item_output and self.n_before < N_BEFORE:
-                past_keys_temp = fetch_reversed_past_datetimes(total_keys, N_BEFORE, timestep)
+            if use_datetime_keys:
+                split_keys = get_dataset_keys(hdf)
+                self.keys = [
+                    key.decode("utf-8")
+                    for key in hdf["what/datetime_keys"]
+                    if key.decode("utf-8") in split_keys
+                ]
+                self.past_keys = fetch_reversed_past_datetimes(self.keys, self.n_before, timestep)
+                self.future_keys = fetch_future_datetimes(self.keys, self.n_after, timestep)
             else:
-                past_keys_temp = self.past_keys
+                total_keys = get_dataset_keys(hdf)
+                self.past_keys = fetch_reversed_past_datetimes(total_keys, self.n_before, timestep)
+                if "latent_field" in self.get_item_output and self.n_before < N_BEFORE:
+                    past_keys_temp = fetch_reversed_past_datetimes(total_keys, N_BEFORE, timestep)
+                else:
+                    past_keys_temp = self.past_keys
 
-            self.future_keys = fetch_future_datetimes(total_keys, self.n_after, timestep)
-            valid_key_indices = []
-            for i in range(len(total_keys)):
-                valid = True
-                # Accept missing past keys but not future keys
-                missing_past_keys = 0
-                for key in past_keys_temp[i]:
-                    if key not in total_keys:
-                        missing_past_keys += 1
-                if missing_past_keys > self.n_before // 3:
-                    valid = False
-                for key in self.future_keys[i]:
-                    if key not in total_keys:
+                self.future_keys = fetch_future_datetimes(total_keys, self.n_after, timestep)
+                valid_key_indices = []
+                for i in range(len(total_keys)):
+                    valid = True
+                    # Accept missing past keys but not future keys
+                    missing_past_keys = 0
+                    for key in past_keys_temp[i]:
+                        if key not in total_keys:
+                            missing_past_keys += 1
+                    if missing_past_keys > self.n_before // 3:
                         valid = False
-                        break
-                if valid:
-                    valid_key_indices.append(i)
-            self.keys = [total_keys[i] for i in valid_key_indices]
-            self.past_keys = [self.past_keys[i] for i in valid_key_indices]
-            self.future_keys = [self.future_keys[i] for i in valid_key_indices]
+                    for key in self.future_keys[i]:
+                        if key not in total_keys:
+                            valid = False
+                            break
+                    if valid:
+                        valid_key_indices.append(i)
+                self.keys = [total_keys[i] for i in valid_key_indices]
+                self.past_keys = [self.past_keys[i] for i in valid_key_indices]
+                self.future_keys = [self.future_keys[i] for i in valid_key_indices]
 
             if "train_log_mean" in what.attrs.keys() and "train_log_std" in what.attrs.keys():
                 self.train_log_mean = what.attrs["train_log_mean"]

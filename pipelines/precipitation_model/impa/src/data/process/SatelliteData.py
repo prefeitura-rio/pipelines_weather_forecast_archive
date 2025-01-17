@@ -26,13 +26,13 @@ class SatelliteData:
         data: pd.DataFrame,
         product: list[str],
         value: str | None = None,
-        day: str | None = None,
+        file_stem: str | None = None,
         folder: str | None = None,
     ) -> None:
         self.data = data
         self.product = product
         self.value = value
-        self.day = datetime.strptime(day, "%Y-%m-%d").date()
+        self.stem = file_stem
         self.folder = folder
 
     @classmethod
@@ -45,25 +45,8 @@ class SatelliteData:
             Path(input_filepath).parents[1],
         )
 
-    def _load_previous_day(self):
-        self.data = pd.concat(
-            [
-                pd.read_feather(
-                    f"{self.folder}/{self.product}/{self.day - timedelta(days=1)}.feather"
-                ),
-                self.data,
-            ]
-        )
-
     def _load_cloud_height(self) -> pd.DataFrame:
-        return pd.concat(
-            [
-                pd.read_feather(f"{self.folder}/ABI-L2-ACHAF/{self.day}.feather"),
-                pd.read_feather(
-                    f"{self.folder}/ABI-L2-ACHAF/{self.day - timedelta(days=1)}.feather"
-                ),
-            ]
-        )
+        return pd.read_feather(f"{self.folder}/ABI-L2-ACHAF/{self.stem}.feather")
 
     def correct_parallax(self):
         from satpy.modifiers.parallax import get_parallax_corrected_lonlats
@@ -103,7 +86,6 @@ class SatelliteData:
         return new_sd
 
     def interp_at_grid(self, band: str, timestamp: datetime, target_grid: NDArray):
-        self._load_previous_day()
         assert (
             timestamp >= self.data["creation"]
         ).any(), "Timestamp passed precedes all timestamps in the data"

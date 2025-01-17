@@ -1,0 +1,37 @@
+{
+    "models":{
+        "PySTEPS":{
+            "args":{
+                "overwrite": true,
+                "output_predict_filepaths": ["predictions_MDN/PySTEPS.hdf"],
+                "motion_field": "lk",
+                "advection":"steps"
+            }
+        },
+        "UNET":{
+            "model_file": "0--best-epoch=5.ckpt"
+        },
+        "EVONET":{
+            "model_file": "8--best-epoch=69.ckpt",
+            "plot": false
+        },
+        "NowcastNet":{
+            "args":{
+                "overwrite": true,
+                "output_predict_filepaths": ["predictions_MDN/NowcastNet.hdf"],
+                "predict_dataframe": "predictions_MDN/EVONET.hdf",
+                "input_model_filepath": "models_MDN/NowcastNet/1--best-epoch=10.ckpt",
+                "compile": false,
+                "batch_to_predict": 8
+            },
+            "params_filepath": "models_MDN/NowcastNet/params.json"
+        },
+        "MetNet3":{
+            "model_file": "0--best-epoch=14.ckpt"
+        },
+        "Mamba":{
+            "model_file": "1--best-epoch=17.ckpt",
+            "needs_cuda": true
+        }
+    }
+}

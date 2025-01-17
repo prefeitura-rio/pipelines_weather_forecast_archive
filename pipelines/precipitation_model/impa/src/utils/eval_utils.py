@@ -10,30 +10,19 @@ import plotly.graph_objects as go
 from PIL import Image
 
 from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
-from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.predict import (
-    main as latent_diffusion_predict,
-)
-from pipelines.precipitation_model.impa.src.models.mamba.predict import (
-    main as mamba_predict,
-)
-from pipelines.precipitation_model.impa.src.models.predict import (
-    main as general_predict,
-)
-
-# from pipelines.precipitation_model.impa.src.models.pysteps_LK.predict import (
-#     main as pysteps_predict,
-# )  # removed
+from pipelines.precipitation_model.impa.src.models.mamba.predict import main as mamba_predict
+from pipelines.precipitation_model.impa.src.models.predict import main as general_predict
+from pipelines.precipitation_model.impa.src.models.pysteps_LK.predict import main as pysteps_predict
 
 MAP_CENTER = {"lat": -22.914550816555533, "lon": -43.502443050594596}
 ZOOM = 8
 eval_window = range(96, 160)
 
 predict_dict = {
-    # "PySTEPS": pysteps_predict,  # removed
+    "PySTEPS": pysteps_predict,
     "UNET": general_predict,
     "EVONET": general_predict,
     "NowcastNet": general_predict,
-    "Context_LDM": latent_diffusion_predict,
     "MetNet3": general_predict,
     "MetNet_lead_time": general_predict,
     "Mamba": mamba_predict,
@@ -101,10 +90,7 @@ def get_img(
         lat=np.concatenate([latlons[:, :, 0].flatten()[~exclude_idx], np.array([0])]),
         lon=np.concatenate([latlons[:, :, 1].flatten()[~exclude_idx], np.array([0])]),
         mode="markers",
-        marker={
-            **marker_dict,
-            "color": np.concatenate([values[~exclude_idx], np.array([0])]),
-        },
+        marker={**marker_dict, "color": np.concatenate([values[~exclude_idx], np.array([0])])},
     )
     fig = go.Figure(trace)
     if metric_names is not None:
@@ -129,9 +115,9 @@ def get_img(
         margin=dict(l=5, r=5, t=40, b=20),
         height=height,
         width=width,
-        title_text=f"{model_name} T{'+'*(delta >= 0)}{delta} minutes"
-        if delta is not None
-        else model_name,
+        title_text=(
+            f"{model_name} T{'+'*(delta >= 0)}{delta} minutes" if delta is not None else model_name
+        ),
         title_x=0.5,
         title_font_size=25,
         title_font_family="Open Sans",

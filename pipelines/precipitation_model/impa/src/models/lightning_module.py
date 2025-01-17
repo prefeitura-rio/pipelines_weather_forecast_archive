@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E203
+
 import torch
 from einops import rearrange
 from pytorch_lightning import LightningModule
@@ -37,7 +38,7 @@ class LModule(LightningModule):
         self.save_hyperparameters()
         self.ground_truth = truth
         self.ground_truth_val = truth_val
-        self.old = False
+        self.old = True
         self.n_before = self.hparams.n_before
         self.n_after = self.hparams.n_after
         self.normalized = self.hparams.normalized
@@ -68,16 +69,21 @@ class LModule(LightningModule):
         if not self.merge:
             assert not self.dm_option["No_satellite"]
 
-        self.channels_in = (
-            2 * self.n_before
-            + 2 * self.dm_option["Elevation"]
-            - self.n_before * self.dm_option["No_context"]
-            + 4 * self.dm_option["Lat_lon"]
-            + 4 * self.dm_option["Hour_data"]
-            + self.dm_option["Add_lead_to_input"]
-            + self.n_before * self.merge
-            - self.n_before * 2 * self.dm_option["No_satellite"]
-        )
+        if len(context) == 2:
+            self.channels_in = (
+                2 * self.n_before
+                + 2 * self.dm_option["Elevation"]
+                - self.n_before * self.dm_option["No_context"]
+                + 4 * self.dm_option["Lat_lon"]
+                + 4 * self.dm_option["Hour_data"]
+                + self.dm_option["Add_lead_to_input"]
+                + self.n_before * self.merge
+                - self.n_before * 2 * self.dm_option["No_satellite"]
+            )
+
+            self.old = False
+        elif len(context) == 1:
+            self.channels_in = self.n_before
 
         print("Old_data: ", self.old)
         self.channels_out = (

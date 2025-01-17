@@ -1,0 +1,115 @@
+/* Basic styling for the slider container and images */
+.image-slider {
+    position: relative;
+    width: 95vw; /* Adjust as needed */
+    height: 33vw; /* Adjust as needed */
+  }
+  
+  .image-slider img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    /*
+    left: 0;
+    width: 100%;
+    height: 100%;*/
+    opacity: 0;
+    transition: opacity 0s ease-in-out;
+  }
+  
+  .image-slider img.active {
+    opacity: 1;
+  }
+  
+  .image-slider-bar {
+    width: 100%;
+    margin: 34vw 0; /* Adjust as needed */
+    appearance: none; /* Remove default browser styling */
+    background-color: #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .image-slider-bar::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Remove default thumb styling */
+    background-color: #333;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  #pauseButton{
+    position: absolute;
+    width: 30px; /* Adjust as needed */
+    height: 30px; /* Adjust as needed */
+    margin-top: 35vw; /* Space above buttons */
+    margin-left: -51%; /* Space from the left */
+    padding: 5px 10px; /* Increase clickable area */
+    border: 1px solid #ccc; /* Add a border */
+    background-color: #f0f0f0; /* Set a background color */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); /* Add a shadow */
+  }
+  #resumeButton{
+    position: absolute;
+    width: 30px; /* Adjust as needed */
+    height: 30px; /* Adjust as needed */
+    margin-top: 35vw; /* Space above buttons */
+    margin-left: -49%; /* Space from the left */
+    padding: 5px 10px; /* Increase clickable area */
+    border: 1px solid #ccc; /* Add a border */
+    background-color: #f0f0f0; /* Set a background color */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); /* Add a shadow */
+  }
+
+      /* condition for screen size minimum of 500px */
+      @media (min-width:3000px) {
+        .image-slider-bar {
+          opacity: 0;
+          width: 100%;
+          margin: 34vw 0; /* Adjust as needed */
+          appearance: none; /* Remove default browser styling */
+          background-color: #ddd;
+          border-radius: 5px;
+          cursor: pointer;
+        }
+        
+        .image-slider-bar::-webkit-slider-thumb {
+          opacity: 0;
+          -webkit-appearance: none; /* Remove default thumb styling */
+          background-color: #333;
+          width: 15px;
+          height: 15px;
+          border-radius: 50%;
+          cursor: pointer;
+        }
+        #pauseButton{
+          opacity: 0;
+          position: absolute;
+          width: 30px; /* Adjust as needed */
+          height: 30px; /* Adjust as needed */
+          margin-top: 35vw; /* Space above buttons */
+          margin-left: -51%; /* Space from the left */
+          padding: 5px 10px; /* Increase clickable area */
+          border: 1px solid #ccc; /* Add a border */
+          background-color: #f0f0f0; /* Set a background color */
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); /* Add a shadow */
+        }
+        #resumeButton{
+          opacity: 0;
+          position: absolute;
+          width: 30px; /* Adjust as needed */
+          height: 30px; /* Adjust as needed */
+          margin-top: 35vw; /* Space above buttons */
+          margin-left: -49%; /* Space from the left */
+          padding: 5px 10px; /* Increase clickable area */
+          border: 1px solid #ccc; /* Add a border */
+          background-color: #f0f0f0; /* Set a background color */
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); /* Add a shadow */
+        }
+    
+    }
+  

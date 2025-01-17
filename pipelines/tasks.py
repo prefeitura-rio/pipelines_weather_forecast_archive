@@ -6,6 +6,10 @@ Common  Tasks for rj-cor
 
 import json
 from datetime import timedelta
+import gzip
+import os
+import shutil
+import zipfile
 from pathlib import Path
 from typing import List, Union
 
@@ -475,3 +479,34 @@ def create_table_and_upload_to_gcs(
         log("STEP UPLOAD: Table does not exist in STAGING, need to create first")
 
     return data_path
+
+
+@task
+def unzip_files(compressed_files: List[str], destination_folder: str = "./") -> List[str]:
+    """
+    Unzip .zip and .gz files to destination folder.
+    """
+    log(f"Compressed files: {compressed_files} will be sent to {destination_folder}.")
+    compressed_files = [
+        zip_file if zip_file.endswith((".zip", ".gz")) else zip_file + ".zip"
+        for zip_file in compressed_files
+    ]
+    os.makedirs(destination_folder, exist_ok=True)
+
+    extracted_files = []
+    for file in compressed_files:
+        if file.endswith(".zip"):
+            log("zip file found")
+            with zipfile.ZipFile(file, "r") as zip_ref:
+                zip_ref.extractall(destination_folder)
+                extracted_files.extend(
+                    [os.path.join(destination_folder, f) for f in zip_ref.namelist()]
+                )
+        elif file.endswith(".gz"):
+            output_file = os.path.join(destination_folder, os.path.basename(file)[:-3])
+            with gzip.open(file, "rb") as gz_file:
+                with open(output_file, "wb") as out_file:
+                    shutil.copyfileobj(gz_file, out_file)
+            extracted_files.append(output_file)
+    log(f"Extracted files: {extracted_files}")
+    return extracted_files

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 import importlib
 import pathlib
 from functools import partial
@@ -20,11 +22,13 @@ from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
 from pipelines.precipitation_model.impa.src.utils.models_utils import (
     get_ds,
-    options_pretrained,
 )
 
 MEAN_LOG_SAT = 0.08
 STD_LOG_SAT = 0.39
+
+MEAN_LOG_RAD = 0.32662693
+STD_LOG_RAD = 1.2138965
 
 
 def transform0(X, mean, std, sat=False):
@@ -225,19 +229,11 @@ def main(args_dict, parameters_dict):
                 )
             else:
                 n_predictions = n_after
-                try:
-                    saved_predictions = options_pretrained[args_dict["predictions"]][
-                        args_dict["dataframe"]
-                    ][args_dict["predictions_option"] - 1]
-                except IndexError:
-                    raise ValueError("Incorrect prediction option.")
 
                 ds = PredHDFDatasetLocations(
                     dataframe_filepath,
                     [location],
                     n_predictions=n_predictions,
-                    ckpt_file=args_dict["ckpt_file_predictions"],
-                    model=saved_predictions,
                     dataset=args_dict["predict_dataframe"],
                     n_after=n_after,
                     n_before=n_before,
@@ -289,7 +285,12 @@ def main(args_dict, parameters_dict):
                 mean_data = MEAN_LOG_SAT
                 std_data = STD_LOG_SAT
         else:
-            raise ValueError("Invalid data normalization.")
+            try:
+                mean_data = ds.train_log_mean
+                std_data = ds.train_log_std
+            except AttributeError:
+                mean_data = MEAN_LOG_RAD
+                std_data = STD_LOG_RAD
 
         ds.x_transform = partial(transform, mean=mean_data, std=std_data, sat=sat)
         ds.y_transform = partial(transform, mean=mean_data, std=std_data, sat=sat)
