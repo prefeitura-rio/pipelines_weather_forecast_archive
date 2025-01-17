@@ -1,1 +1,0 @@
-{"normalized": 3, "batch": 16, "loss": 2, "weights": 2, "data_modification": null, "n_after": 18, "n_before": 12, "n_epochs": 50, "predict_dataset": null, "lambda_": 0.1, "learning_rate": 0.0002, "model_name": "Evolution_Network"}
