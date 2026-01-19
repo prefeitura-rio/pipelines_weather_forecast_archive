@@ -720,10 +720,8 @@ class ETL:
         """
         dataset = args.dataset1
         if args.station_type not in ["rain_gauge", "weather_station"]:
-            raise Exception(
-                f"Invalid station type. Must be rain_gauge or weather_station.\
-                      Received: {args.station_type}"
-            )
+            raise Exception(f"Invalid station type. Must be rain_gauge or weather_station.\
+                      Received: {args.station_type}")
         station_type = args.station_type
         print(f"Performing preprocessing step. Station type: {station_type}")
 
@@ -735,7 +733,7 @@ class ETL:
         # Preprocessor = RainGaugeDataPreprocessor if station_type == "rain_gauge" else None
         preprocessor = Preprocessor(
             dataset,
-            station_type
+            station_type,
             # f"staged/{station_type}/alertario",
             # f"curated/{station_type}/alertario",
         )

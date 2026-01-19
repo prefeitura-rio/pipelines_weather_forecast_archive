@@ -2,6 +2,7 @@
 """
 Utils for rj-cor
 """
+
 import json
 from os import getenv
 from typing import Callable
