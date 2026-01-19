@@ -243,14 +243,14 @@ class TemporalAttention(nn.Module):
         if y is None:
             y = x
 
-        (K, V) = self.KV(y).chunk(2, dim=-1)
-        (B, Dk, H, W, C) = K.shape
+        K, V = self.KV(y).chunk(2, dim=-1)
+        B, Dk, H, W, C = K.shape
         shape = (B, Dk, H, W, self.num_heads, self.head_dim)
         K = K.reshape(shape)
         V = V.reshape(shape)
 
         Q = self.Q(x)
-        (B, Dq, H, W, C) = Q.shape
+        B, Dq, H, W, C = Q.shape
         shape = (B, Dq, H, W, self.num_heads, self.head_dim)
         Q = Q.reshape(shape)
 

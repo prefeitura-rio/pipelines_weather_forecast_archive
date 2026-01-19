@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E501
-""" Parts of the GAN model """
+"""Parts of the GAN model"""
 
 import torch
 import torch.nn as nn

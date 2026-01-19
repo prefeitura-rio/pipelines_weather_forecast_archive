@@ -3,6 +3,7 @@
 """
 Tasks
 """
+
 import datetime
 import os
 from pathlib import Path
@@ -182,9 +183,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments, too-many-locals
         FROM rj-cor.{}.{}
         WHERE data_particao BETWEEN '{}' AND '{}'
         AND datetime >= '{}' AND datetime < '{}'
-        """.format(
-        dataset_id, table_id, start_date, end_date, start_datetime, end_datetime
-    )
+        """.format(dataset_id, table_id, start_date, end_date, start_datetime, end_datetime)
 
     log(f"Query used to download data:\n{query}")
 

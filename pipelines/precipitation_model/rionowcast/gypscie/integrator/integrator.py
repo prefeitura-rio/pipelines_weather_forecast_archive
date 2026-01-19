@@ -4,6 +4,7 @@
 rodar local:
 python integrator.py --sources InmetWS AlertaRioRG --period "2024-02-02" "2024-02-03"
 """
+
 import argparse
 import os
 from datetime import datetime

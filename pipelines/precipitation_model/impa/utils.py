@@ -3,6 +3,7 @@
 """
 Utils
 """
+
 import pathlib
 
 import boto3  # pylint: disable=E0611, E0401
